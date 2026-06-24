@@ -1,0 +1,90 @@
+{
+  "schema_version": "l3_era_seed_v1",
+  "created_at": "2026-06-24T00:00:00+08:00",
+  "eras": [
+    {
+      "era_id": "era_01",
+      "era_order": 1,
+      "era_name": "第一代世界",
+      "era_aliases": ["第一代世界", "一代世界"],
+      "timeline_type": "unknown",
+      "red_king": "unknown",
+      "path": "unknown",
+      "description": "unknown",
+      "narrative_role": "unknown",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    },
+    {
+      "era_id": "era_02",
+      "era_order": 2,
+      "era_name": "第二代世界",
+      "era_aliases": ["第二代世界", "二代世界"],
+      "timeline_type": "unknown",
+      "red_king": "unknown",
+      "path": "unknown",
+      "description": "unknown",
+      "narrative_role": "unknown",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    },
+    {
+      "era_id": "era_03",
+      "era_order": 3,
+      "era_name": "第三代世界",
+      "era_aliases": ["第三代世界", "三代世界"],
+      "timeline_type": "unknown",
+      "red_king": "unknown",
+      "path": "unknown",
+      "description": "unknown",
+      "narrative_role": "unknown",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    },
+    {
+      "era_id": "era_04",
+      "era_order": 4,
+      "era_name": "第四代世界",
+      "era_aliases": ["第四代世界", "四代世界", "陈妖时代"],
+      "timeline_type": "flashback",
+      "red_king": "陈妖",
+      "path": "巫神道路径",
+      "description": "轮回布局的关键一代，首次构建红王传承的底层逻辑，最终登上赤星牺牲，将希望寄托给下一代。",
+      "narrative_role": "剧情中主要以回忆、传承碎片的形式出现，不是主线主场。",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    },
+    {
+      "era_id": "era_05",
+      "era_order": 5,
+      "era_name": "第五代世界",
+      "era_aliases": ["第五代世界", "五代世界", "陈宴时代", "五代红王"],
+      "timeline_type": "main",
+      "red_king": "陈宴",
+      "path": "戏神道路径",
+      "description": "小说主线剧情的主舞台。九大界域、黄昏社、749 局、陈伶以红心 6 身份活跃的核心剧情，主要发生在第五代世界。五代红王陈宴登上赤星、神魂俱灭，完成自己的布局使命，世界迎来重启节点。",
+      "narrative_role": "主线剧情的主要发生时代。",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    },
+    {
+      "era_id": "era_06",
+      "era_order": 6,
+      "era_name": "第六代世界",
+      "era_aliases": ["第六代世界", "六代世界", "陈伶时代", "六代红王", "新纪元"],
+      "timeline_type": "new_main",
+      "red_king": "陈伶",
+      "path": "嘲神道路径",
+      "description": "五代红王布局最终落地的新纪元。陈伶在五代红王牺牲后继承红王身份，回收赤星愿力与神道碎片，重启世界进入第六代，成为六代红王。",
+      "narrative_role": "承天界域、新黄昏社架构等逐步展开，是故事后续推进的核心舞台。",
+      "evidence_status": "manual_seed",
+      "evidence_refs": [],
+      "created_at": "2026-06-24T00:00:00+08:00"
+    }
+  ]
+}

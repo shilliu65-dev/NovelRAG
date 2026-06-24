@@ -1,0 +1,80 @@
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# =========================
+# virtual env
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# environment secrets
+# =========================
+.env
+.env.*
+*.pem
+*.key
+
+# =========================
+# Novel raw text / private data
+# DO NOT upload novel text
+# =========================
+chapters/
+chapters_raw/
+data/
+raw/
+novel/
+原文/
+小说原文/
+*.txt
+
+# =========================
+# SQLite database / private index
+# DO NOT upload generated DB
+# =========================
+index/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# =========================
+# vector database / embeddings
+# =========================
+.chroma/
+chroma/
+embeddings/
+vector_store/
+
+# =========================
+# generated outputs / reports / logs
+# =========================
+outputs/
+logs/
+reports/
+*.log
+
+# =========================
+# OS / editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# temporary files
+# =========================
+*.tmp
+*.bak
+*.swp
