@@ -1,0 +1,112 @@
+{
+  "version": "l3_godway_progression_seed_v1.1.0",
+  "source": "user_seed",
+  "global_enums": {
+    "evidence_status_values": [
+      "user_seed",
+      "pending_l1_evidence",
+      "l1_confirmed"
+    ],
+    "rank_values": [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  },
+  "progressions": [
+    {
+      "godway_id": "godway_xi",
+      "name": "戏神道",
+      "catalog_branches_checksum": "96694660671e872f110f54912e20777976de2ccf2ea7f2b5541880a31d4c3bd8",
+      "normal_progression_note": "普通戏神道分生、旦、净三大正统分支。陈伶路线单独进入 special_power_rules，不并入普通 progression。",
+      "ranks": [
+        {
+          "rank": 1,
+          "ability_summary": "初步入戏，情绪微弱干涉现实，基础演法",
+          "description": "普通戏神道入门能力，建立基础演法与情绪感知。",
+          "domain": "",
+          "capability_tags": ["basic_godway_skill"],
+          "prerequisites": [],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 2,
+          "ability_summary": "扮演具象角色，小幅扭曲周遭感知",
+          "description": "普通戏神道早期能力，强化角色扮演与感知影响。",
+          "domain": "",
+          "capability_tags": ["basic_godway_skill"],
+          "prerequisites": ["rank_1_basic_entry"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 3,
+          "ability_summary": "戏力凝实，可制造小型幻戏，道基稳固",
+          "description": "普通戏神道道基稳固阶段，可形成小型幻戏。",
+          "domain": "",
+          "capability_tags": ["basic_godway_skill"],
+          "prerequisites": ["rank_2_role_play"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 4,
+          "ability_summary": "觉醒领域，诞生诡异观众，表演强度决定战力",
+          "description": "普通戏神道领域觉醒阶段，剧场能力正式成型。",
+          "domain": "剧场",
+          "capability_tags": ["domain_awakened"],
+          "prerequisites": ["rank_3_stable_foundation"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 5,
+          "ability_summary": "剧场扩容，观众增多，幻戏可实体化伤人",
+          "description": "普通戏神道领域扩张阶段，剧场影响范围提高。",
+          "domain": "剧场",
+          "capability_tags": ["domain_expansion"],
+          "prerequisites": ["rank_4_domain_awakened"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 6,
+          "ability_summary": "戏道韵力外放，大范围制造幻境、篡改场景",
+          "description": "普通戏神道高阶阶段，道韵外放并影响大范围场景。",
+          "domain": "剧场",
+          "capability_tags": ["domain_expansion"],
+          "prerequisites": ["rank_5_domain_expansion"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 7,
+          "ability_summary": "触摸戏道本源，虚实边界进一步削弱",
+          "description": "普通戏神道高阶成熟阶段，开始接近戏道本源。",
+          "domain": "剧场",
+          "capability_tags": ["domain_expansion"],
+          "prerequisites": ["rank_6_rhyme_externalization"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 8,
+          "ability_summary": "剧场圆满，观众具备干涉现实之力，半步半神",
+          "description": "普通戏神道半步半神阶段，剧场领域趋近圆满。",
+          "domain": "剧场",
+          "capability_tags": ["domain_expansion"],
+          "prerequisites": ["rank_7_origin_touch"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        },
+        {
+          "rank": 9,
+          "ability_summary": "戏神半神，正统三路径各显极致",
+          "description": "普通戏神道半神境阶段，法则显化并抵达普通体系极致。",
+          "domain": "剧场",
+          "capability_tags": ["law_manifestation"],
+          "prerequisites": ["rank_8_half_step_demigod"],
+          "forbidden_tags": [],
+          "status": "user_seed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,457 @@
+{
+  "version": "l3_godway_catalog_seed_v1.1.0",
+  "source": "user_seed",
+  "global_enums": {
+    "godway_group_values": [
+      "mainstream_14",
+      "ancient_declined_4"
+    ],
+    "godway_category_values": [
+      "mainstream_14",
+      "ancient_declined_4"
+    ],
+    "godway_status_values": [
+      "active",
+      "deprecating",
+      "deprecated"
+    ],
+    "evidence_status_values": [
+      "user_seed",
+      "pending_l1_evidence",
+      "l1_confirmed"
+    ]
+  },
+  "godways": [
+    {
+      "godway_id": "godway_xi",
+      "name": "戏神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": ["生", "旦", "净"],
+      "branches_checksum": "96694660671e872f110f54912e20777976de2ccf2ea7f2b5541880a31d4c3bd8",
+      "core_authority": ["表演", "虚实转化", "情绪干涉", "剧场领域", "叙事扭曲"],
+      "representative_characters": [
+        {
+          "name": "陈伶",
+          "role_description": "戏神道相关，陈伶特殊路线需单独进 special_power_rules",
+          "exclusive": false,
+          "allow_cross_godway": true,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "戏子无名",
+          "role_description": "戏神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "宁如玉",
+          "role_description": "戏神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "栾梅",
+          "role_description": "戏神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "末角",
+          "role_description": "戏神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed",
+      "note": "陈伶路线特殊，不完全等同于普通戏神道。"
+    },
+    {
+      "godway_id": "godway_bing",
+      "name": "兵神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": ["审判", "修罗", "天狼", "止戈"],
+      "branches_checksum": "5675fb404f4d4131a9bce1bbe94a697b198d5fc229a524306a34fd3fcc4d5853",
+      "core_authority": ["兵器", "杀伐", "战意", "战场规则"],
+      "representative_characters": [
+        {
+          "name": "简长生",
+          "role_description": "兵神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "韩蒙",
+          "role_description": "兵神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_li",
+      "name": "力神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["肉身", "力量", "重力", "气血"],
+      "representative_characters": [
+        {
+          "name": "典国公",
+          "role_description": "力神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_yi",
+      "name": "医神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["治疗", "毒术", "生机", "死亡"],
+      "representative_characters": [
+        {
+          "name": "楚牧云",
+          "role_description": "医神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "韩先生",
+          "role_description": "医神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_wu",
+      "name": "巫神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["诅咒", "蛊术", "祭祀", "灵媒", "图腾"],
+      "representative_characters": [
+        {
+          "name": "姜小花",
+          "role_description": "巫神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "卜国公",
+          "role_description": "巫神道关联身份，需 RAG 反查确认是否跨神道",
+          "exclusive": false,
+          "allow_cross_godway": true,
+          "allowed_cross_godway_ids": ["godway_bu"],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_bu",
+      "name": "卜神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["推演", "预言", "窥命", "布局"],
+      "representative_characters": [
+        {
+          "name": "卜国公",
+          "role_description": "卜神道代表人物，和巫神道关联需 RAG 反查确认",
+          "exclusive": false,
+          "allow_cross_godway": true,
+          "allowed_cross_godway_ids": ["godway_wu"],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_dao",
+      "name": "盗神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": ["借月"],
+      "branches_checksum": "2655807d467a635394cef29a10539c32234862df816b82c8d712d27237403034",
+      "core_authority": ["窃取实物", "记忆", "能力", "气运", "时间"],
+      "representative_characters": [
+        {
+          "name": "白也",
+          "role_description": "盗神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "李莱德",
+          "role_description": "盗神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_chang",
+      "name": "娼神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["魅惑", "情报", "潜行", "暗杀", "精神干扰"],
+      "representative_characters": [
+        {
+          "name": "柳轻烟",
+          "role_description": "娼神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "左湛",
+          "role_description": "娼神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_qiao",
+      "name": "巧神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["造物", "机关", "炼金", "机械", "缝合改造"],
+      "representative_characters": [
+        {
+          "name": "李尚风",
+          "role_description": "巧神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "太史司众人",
+          "role_description": "巧神道组织型代表",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_ou",
+      "name": "偶神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["傀儡", "人偶", "替身", "机关人"],
+      "representative_characters": [
+        {
+          "name": "钧国公",
+          "role_description": "偶神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_qing",
+      "name": "青神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["丹青化实", "画境困敌", "虚实转化"],
+      "representative_characters": [
+        {
+          "name": "姚青",
+          "role_description": "青神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_huang",
+      "name": "黄神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["生机", "五谷", "地气", "繁育", "环境修复"],
+      "representative_characters": [
+        {
+          "name": "启国公",
+          "role_description": "黄神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_shu",
+      "name": "书神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["笔墨言灵", "文字封印", "书卷法则"],
+      "representative_characters": [
+        {
+          "name": "蒲夏蝉",
+          "role_description": "书神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_yi_chess",
+      "name": "弈神道",
+      "group": "mainstream_14",
+      "category": "mainstream_14",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["棋局布局", "战局推演", "规则博弈", "算计人心"],
+      "representative_characters": [],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_di",
+      "name": "帝神道",
+      "group": "ancient_declined_4",
+      "category": "ancient_declined_4",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["帝王权柄", "疆域气运", "统御法则"],
+      "representative_characters": [
+        {
+          "name": "嬴覆",
+          "role_description": "帝神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        },
+        {
+          "name": "李覆",
+          "role_description": "帝神道代表人物",
+          "exclusive": false,
+          "allow_cross_godway": false,
+          "allowed_cross_godway_ids": [],
+          "source_kind": "user_seed"
+        }
+      ],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_gui",
+      "name": "鬼神道",
+      "group": "ancient_declined_4",
+      "category": "ancient_declined_4",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["阴阳两界", "魂体操控", "幽冥鬼力"],
+      "representative_characters": [],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_tian",
+      "name": "天神道",
+      "group": "ancient_declined_4",
+      "category": "ancient_declined_4",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["星辰之力", "天地本源", "天道法则"],
+      "representative_characters": [],
+      "seed_status": "user_seed"
+    },
+    {
+      "godway_id": "godway_xie",
+      "name": "邪神道",
+      "group": "ancient_declined_4",
+      "category": "ancient_declined_4",
+      "status": "active",
+      "branches": [],
+      "branches_checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "core_authority": ["黑暗蛊惑", "堕落之力", "灾厄关联"],
+      "representative_characters": [],
+      "seed_status": "user_seed"
+    }
+  ]
+}

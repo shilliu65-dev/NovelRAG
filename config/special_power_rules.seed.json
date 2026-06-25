@@ -1,0 +1,126 @@
+{
+  "version": "l3_special_power_rules_seed_v1.1.0",
+  "source": "user_seed",
+  "global_enums": {
+    "special_rule_type_values": [
+      "chenling_special_route",
+      "true_god_rule",
+      "disasterization_rule",
+      "gray_world_rule"
+    ],
+    "evidence_status_values": [
+      "user_seed",
+      "pending_l1_evidence",
+      "l1_confirmed"
+    ]
+  },
+  "base_godway_constraints": {
+    "allowed_godway_categories": ["mainstream_14"],
+    "allowed_status": ["active"],
+    "disallowed_status": ["deprecated", "deprecating"]
+  },
+  "disasterization_rules": {
+    "normal_progression_allowed": false,
+    "belongs_to_rank_10": false,
+    "trigger_type": "special_event",
+    "trigger_conditions": [
+      "特殊剧情事件",
+      "灾厄相关状态变化",
+      "用户确认后再进入证据流程"
+    ]
+  },
+  "special_rules": [
+    {
+      "rule_id": "chenling_twisted_xi_god_route",
+      "rule_type": "chenling_special_route",
+      "name": "陈伶专属扭曲戏神路线",
+      "related_character": "陈伶",
+      "base_godway_id": "godway_xi",
+      "related_disaster": "嘲灾",
+      "description": "陈伶属于特殊变异路线，融合嘲灾后形成扭曲戏神方向，不能完全等同于普通戏神道。",
+      "should_not_merge_into_normal_progression": true,
+      "status": "user_seed",
+      "forbidden_patterns": [
+        {
+          "term": "扭曲戏神",
+          "pattern": "扭曲戏神",
+          "severity": "error",
+          "allowed_context_patterns": ["不属于扭曲戏神", "排除扭曲戏神"],
+          "blocked_context_patterns": ["成为扭曲戏神", "形成扭曲戏神", "扭曲戏神路线"],
+          "description": "扭曲戏神只属于陈伶特殊路线，不应混入普通戏神道 progression。"
+        },
+        {
+          "term": "嘲灾",
+          "pattern": "嘲灾",
+          "severity": "error",
+          "allowed_context_patterns": ["不涉及嘲灾", "排除嘲灾"],
+          "blocked_context_patterns": ["融合嘲灾", "嘲灾融合"],
+          "description": "嘲灾融合只属于陈伶特殊路线，不应混入普通戏神道 progression。"
+        },
+        {
+          "term": "融合",
+          "pattern": "融合",
+          "severity": "warning",
+          "allowed_context_patterns": ["不涉及融合", "排除融合"],
+          "blocked_context_patterns": ["融合嘲灾", "灾厄融合"],
+          "description": "融合一词需要上下文分级，只有特殊融合上下文才阻断。"
+        }
+      ],
+      "future_modules": [
+        "陈伶戏神道全能力",
+        "所有戏目详解",
+        "成长时间线",
+        "关键战斗记录"
+      ]
+    },
+    {
+      "rule_id": "rank_10_true_god_special_layer",
+      "rule_type": "true_god_rule",
+      "name": "十阶真神特殊层",
+      "description": "十阶真神不进入普通 1—9 阶神道境界体系，后续如需要，单独作为终局特殊设定层处理。",
+      "should_not_merge_into_normal_progression": true,
+      "status": "user_seed",
+      "forbidden_patterns": [
+        {
+          "term": "真神",
+          "pattern": "真神",
+          "severity": "error",
+          "allowed_context_patterns": ["不属于真神", "排除真神"],
+          "blocked_context_patterns": ["十阶真神", "真神化", "晋升真神"],
+          "description": "真神相关设定不应进入普通 1—9 阶 progression。"
+        }
+      ]
+    },
+    {
+      "rule_id": "disasterization_special_layer",
+      "rule_type": "disasterization_rule",
+      "name": "灾厄化特殊层",
+      "description": "灾厄化不进入普通神道境界体系，后续单独与灰界、灾厄种类、历史大灾、陈伶特殊形态关联。",
+      "should_not_merge_into_normal_progression": true,
+      "status": "user_seed",
+      "forbidden_patterns": [
+        {
+          "term": "灾厄化",
+          "pattern": "灾厄化",
+          "severity": "error",
+          "allowed_context_patterns": ["不属于灾厄化", "排除灾厄化"],
+          "blocked_context_patterns": ["进入灾厄化", "完成灾厄化", "灾厄化形态"],
+          "description": "灾厄化不得混入普通 1—9 阶 progression。"
+        }
+      ]
+    },
+    {
+      "rule_id": "gray_world_future_module",
+      "rule_type": "gray_world_rule",
+      "name": "灰界规则后续模块",
+      "description": "灰界规则、灰潮等级、灾厄种类、历史大灾后续单独建 seed，不混入普通神道境界。",
+      "status": "user_seed",
+      "future_modules": [
+        "灰界规则",
+        "灰潮等级",
+        "灾厄种类",
+        "历史大灾"
+      ]
+    }
+  ]
+}

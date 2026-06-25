@@ -1,0 +1,109 @@
+{
+  "version": "l3_power_realm_seed_v1.1.0",
+  "source": "user_seed",
+  "global_enums": {
+    "evidence_status_values": [
+      "user_seed",
+      "pending_l1_evidence",
+      "l1_confirmed"
+    ],
+    "realm_type_values": [
+      "normal_godway",
+      "special_rule",
+      "disaster_rule",
+      "chenling_special"
+    ]
+  },
+  "normal_realm_rule": {
+    "realm_type": "normal_godway",
+    "max_normal_rank": 9,
+    "rank_rules": [
+      {
+        "rank_start": 1,
+        "rank_end": 3,
+        "realm_name": "入门境",
+        "core_feature": "夯实道基，掌握神道基础能力",
+        "status": "user_seed"
+      },
+      {
+        "rank_start": 4,
+        "rank_end": 4,
+        "realm_name": "领域觉醒",
+        "core_feature": "解锁专属领域，神道能力正式成型",
+        "status": "user_seed"
+      },
+      {
+        "rank_start": 5,
+        "rank_end": 7,
+        "realm_name": "高阶境",
+        "core_feature": "领域扩张，道韵外放，能力体系成熟",
+        "status": "user_seed"
+      },
+      {
+        "rank_start": 8,
+        "rank_end": 8,
+        "realm_name": "半步半神",
+        "core_feature": "领域趋近圆满，接触神道本源",
+        "status": "user_seed"
+      },
+      {
+        "rank_start": 9,
+        "rank_end": 9,
+        "realm_name": "半神境",
+        "core_feature": "神道走到极致，法则显化，可对标九级灭世灾厄",
+        "status": "user_seed"
+      }
+    ],
+    "note": "普通神道体系统一到 9 阶。10 阶真神、灾厄化、陈伶特殊形态不并入普通境界。"
+  },
+  "capability_order_rules": [
+    {
+      "capability_tag": "basic_godway_skill",
+      "first_allowed_rank": 1,
+      "allowed_in_normal_progression": true,
+      "severity": "warning"
+    },
+    {
+      "capability_tag": "domain_awakened",
+      "first_allowed_rank": 4,
+      "allowed_in_normal_progression": true,
+      "severity": "warning"
+    },
+    {
+      "capability_tag": "domain_expansion",
+      "first_allowed_rank": 5,
+      "allowed_in_normal_progression": true,
+      "severity": "warning"
+    },
+    {
+      "capability_tag": "law_manifestation",
+      "first_allowed_rank": 9,
+      "allowed_in_normal_progression": true,
+      "severity": "warning"
+    },
+    {
+      "capability_tag": "disasterization",
+      "first_allowed_rank": 10,
+      "allowed_in_normal_progression": false,
+      "severity": "error"
+    },
+    {
+      "capability_tag": "true_god",
+      "first_allowed_rank": 10,
+      "allowed_in_normal_progression": false,
+      "severity": "error"
+    },
+    {
+      "capability_tag": "rank_10",
+      "first_allowed_rank": 10,
+      "allowed_in_normal_progression": false,
+      "severity": "error"
+    },
+    {
+      "capability_tag": "chen_ling_unique",
+      "first_allowed_rank": 10,
+      "allowed_in_normal_progression": false,
+      "severity": "error"
+    }
+  ]
+}
