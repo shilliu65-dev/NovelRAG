@@ -1,0 +1,95 @@
+{
+  "version": "l5_event_trigger_rules_seed_v1",
+  "rules": [
+    {
+      "rule_id": "character_death_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_death",
+      "trigger_terms": ["死亡", "死了", "陨落", "毙命", "身亡", "杀死", "杀了", "砸死", "杩涘叆", "姝讳骸", "姝讳簡", "闄ㄨ惤", "姣欏懡", "韬骸", "鏉€姝?", "鏉€浜?"],
+      "negative_terms": ["没死", "不死"],
+      "confidence_level": "high",
+      "state_change_hint": {"state_type": "life_state", "from_state": "alive", "to_state": "dead"},
+      "note": "Explicit death wording only."
+    },
+    {
+      "rule_id": "character_injury_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_injury",
+      "trigger_terms": ["受伤", "重创", "吐血", "昏迷", "失去了意识", "鲜血", "倒下", "摔倒", "鍊掍笅", "閲嶄激", "鍙椾激", "鍚愯", "鏄忚糠", "澶卞幓鎰忚瘑"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "life_state", "from_state": "normal", "to_state": "injured"},
+      "note": "Explicit injury or loss of consciousness wording."
+    },
+    {
+      "rule_id": "character_arrival_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_arrival",
+      "trigger_terms": ["进入", "来到", "抵达", "赶到", "走进", "踏入", "返回", "回来了", "回家", "迈步走入", "杩涘叆", "鏉ュ埌", "鎶佃揪", "璧跺埌", "璧拌繘", "韪忓叆", "杩斿洖"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "location_state", "from_state": "absent", "to_state": "arrived"},
+      "note": "Arrival or entering wording."
+    },
+    {
+      "rule_id": "character_departure_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_departure",
+      "trigger_terms": ["离开", "逃离", "冲出", "退出", "绂诲紑", "閫冪", "鍐插嚭", "閫€鍑?"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "location_state", "from_state": "present", "to_state": "departed"},
+      "note": "Departure or escape wording."
+    },
+    {
+      "rule_id": "character_attack_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_attack",
+      "trigger_terms": ["攻击", "被袭", "杀向", "冲向", "交手", "斩杀", "击中", "开战", "鏀诲嚮", "琚嚮", "鏉€鍚?", "鍐插悜", "浜ゆ墜", "寮€鎴?", "鍘潃", "鍑讳腑"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": null,
+      "note": "Conflict or attack wording."
+    },
+    {
+      "rule_id": "character_identity_reveal_explicit_v1",
+      "event_family": "character_event",
+      "event_type": "character_identity_reveal",
+      "trigger_terms": ["暴露身份", "揭开身份", "真实身份", "原来是", "化名", "伪装", "认出", "身份暴露", "名字突然闪过", "鏆撮湶韬唤", "鎻紑韬唤", "鐪熷疄韬唤", "鍘熸潵鏄?", "鍖栧悕", "浼", "璁ゅ嚭", "韬唤鏆撮湶"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "identity_state", "from_state": "hidden", "to_state": "revealed"},
+      "note": "Explicit identity reveal wording."
+    },
+    {
+      "rule_id": "power_change_explicit_v1",
+      "event_family": "power_event",
+      "event_type": "power_awakening",
+      "trigger_terms": ["觉醒", "晋升", "突破", "领域觉醒", "发动能力", "施展", "失控", "能力消失", "神道", "半神", "瑙夐啋", "鏅嬪崌", "绐佺牬", "棰嗗煙瑙夐啋", "鍙戝姩鑳藉姏", "鏂藉睍", "澶辨帶", "鑳藉姏娑堝け", "绁為亾", "鍗婄"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "power_state", "from_state": "unawakened", "to_state": "awakened"},
+      "note": "Power state wording."
+    },
+    {
+      "rule_id": "domain_gray_attack_explicit_v1",
+      "event_family": "domain_event",
+      "event_type": "domain_attacked",
+      "trigger_terms": ["入侵", "侵蚀", "污染", "吞没", "包围", "封锁", "毁灭", "崩塌", "沦陷", "灰潮", "灰界", "灾厄", "污染区", "灾变空间", "鍏ヤ镜", "渚佃殌", "姹℃煋", "鍚炴病", "鍖呭洿", "灏侀攣", "姣佺伃", "宕╁", "娌﹂櫡", "鐏版疆", "鐏扮晫", "鐏惧巹", "姹℃煋鍖?", "鐏惧彉绌洪棿"],
+      "negative_terms": [],
+      "confidence_level": "medium",
+      "state_change_hint": {"state_type": "domain_state", "from_state": "safe", "to_state": "attacked"},
+      "note": "Domain or gray-world pressure wording."
+    },
+    {
+      "rule_id": "organization_change_explicit_v1",
+      "event_family": "organization_event",
+      "event_type": "character_join_org",
+      "trigger_terms": ["加入", "退出组织", "背叛", "会议", "行动", "任务", "成立", "解散", "暴露", "鍔犲叆", "閫€鍑?", "鑳屽彌", "浼氳", "琛屽姩", "浠诲姟", "鎴愮珛", "瑙ｆ暎", "鏆撮湶"],
+      "negative_terms": [],
+      "confidence_level": "low",
+      "state_change_hint": {"state_type": "organization_state", "from_state": "outsider", "to_state": "member"},
+      "note": "Organization wording; candidate only."
+    }
+  ]
+}

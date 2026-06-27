@@ -1,0 +1,3537 @@
+{
+  "schema_version": "1.0",
+  "layer": "L5.2 Event Normalization Seed / Rule",
+  "project": "NovelRAG",
+  "status": "seed",
+  "created_by": "deterministic_rules",
+  "description": "Deterministic rule seed for future L5.3 event and state-change normalization. This layer defines catalogs and validation rules only.",
+  "hard_constraints": {
+    "no_llm": true,
+    "no_embedding": true,
+    "no_chroma": true,
+    "no_source_table_mutation": true,
+    "no_auto_confirm_event": true,
+    "no_auto_merge_event": true,
+    "candidate_is_not_truth": true
+  },
+  "review_decision_enum": [
+    {
+      "decision": "",
+      "meaning": "unreviewed candidate"
+    },
+    {
+      "decision": "accept",
+      "meaning": "human reviewer accepts this candidate as usable for future normalization"
+    },
+    {
+      "decision": "reject",
+      "meaning": "human reviewer rejects this candidate"
+    },
+    {
+      "decision": "merge",
+      "meaning": "human reviewer marks this candidate as duplicate or mergeable"
+    },
+    {
+      "decision": "split",
+      "meaning": "human reviewer marks this candidate as containing multiple events"
+    },
+    {
+      "decision": "needs_context",
+      "meaning": "candidate requires more surrounding evidence before decision"
+    },
+    {
+      "decision": "uncertain",
+      "meaning": "candidate is plausible but not reliable enough"
+    }
+  ],
+  "entity_kind_enum": [
+    "character",
+    "location",
+    "organization",
+    "power",
+    "artifact",
+    "disaster",
+    "world_rule",
+    "time",
+    "chapter",
+    "scene",
+    "unknown"
+  ],
+  "event_type_catalog": [
+    {
+      "event_type": "movement",
+      "label_zh": "移动/到达/离开",
+      "description": "A character or entity changes position or presence.",
+      "allowed_subtypes": [
+        "arrive",
+        "leave",
+        "enter",
+        "exit",
+        "return",
+        "follow",
+        "chase",
+        "flee",
+        "cross_boundary"
+      ],
+      "default_argument_roles": [
+        "mover",
+        "origin_location",
+        "destination_location",
+        "time_hint",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "location_change",
+        "scene_presence_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not infer exact origin or destination if candidates are absent."
+    },
+    {
+      "event_type": "encounter",
+      "label_zh": "相遇",
+      "description": "Two or more entities meet or perceive each other in a scene.",
+      "allowed_subtypes": [
+        "meet",
+        "first_meet",
+        "unexpected_meet",
+        "confront",
+        "observe_from_distance"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "current_location",
+        "time_hint",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "scene_presence_change",
+        "relationship_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Requires evidence that the encounter occurs in the candidate span."
+    },
+    {
+      "event_type": "dialogue",
+      "label_zh": "对话",
+      "description": "Speech, command, negotiation, warning, or announcement.",
+      "allowed_subtypes": [
+        "ask",
+        "answer",
+        "warn",
+        "threaten",
+        "comfort",
+        "explain",
+        "negotiate",
+        "confess",
+        "command",
+        "announce"
+      ],
+      "default_argument_roles": [
+        "speaker",
+        "listener",
+        "evidence",
+        "time_hint",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "relationship_change",
+        "emotional_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Dialogue content is not truth until reviewed against evidence."
+    },
+    {
+      "event_type": "conflict",
+      "label_zh": "冲突",
+      "description": "A dispute or clash that may be verbal, physical, ideological, internal, or group-based.",
+      "allowed_subtypes": [
+        "verbal_conflict",
+        "physical_conflict",
+        "ideological_conflict",
+        "internal_conflict",
+        "group_conflict"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "target",
+        "cause",
+        "current_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "hostility_change",
+        "relationship_change",
+        "mental_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Use battle for large-scale organized conflict."
+    },
+    {
+      "event_type": "attack",
+      "label_zh": "攻击",
+      "description": "An agent attempts or performs harm against a target.",
+      "allowed_subtypes": [
+        "strike",
+        "ambush",
+        "ranged_attack",
+        "melee_attack",
+        "power_attack",
+        "group_attack",
+        "assassinate"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "weapon",
+        "ability",
+        "current_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "injury_change",
+        "death_change",
+        "hostility_change",
+        "disaster_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not infer attack success unless evidence states it."
+    },
+    {
+      "event_type": "defense",
+      "label_zh": "防御",
+      "description": "An entity blocks, protects, shields, rescues, or suppresses harm.",
+      "allowed_subtypes": [
+        "block",
+        "shield",
+        "protect",
+        "rescue",
+        "counter",
+        "suppress",
+        "evade"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "method",
+        "ability",
+        "current_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "injury_change",
+        "captivity_change",
+        "disaster_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Defense can coexist with attack but must not be auto-merged."
+    },
+    {
+      "event_type": "injury",
+      "label_zh": "受伤",
+      "description": "A character or entity becomes harmed, weakened, unconscious, or damaged.",
+      "allowed_subtypes": [
+        "wound",
+        "bleed",
+        "collapse",
+        "lose_consciousness",
+        "poison",
+        "curse_injury",
+        "mental_injury"
+      ],
+      "default_argument_roles": [
+        "patient",
+        "cause",
+        "current_location",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "injury_change",
+        "status_change",
+        "mental_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not promote to death unless death evidence exists."
+    },
+    {
+      "event_type": "death",
+      "label_zh": "死亡",
+      "description": "A character or entity dies or is destroyed in a life-state sense.",
+      "allowed_subtypes": [
+        "dies",
+        "killed",
+        "sacrifice",
+        "execution",
+        "annihilated",
+        "body_destroyed"
+      ],
+      "default_argument_roles": [
+        "patient",
+        "agent",
+        "cause",
+        "current_location",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "death_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Death is high-impact and must retain explicit evidence."
+    },
+    {
+      "event_type": "resurrection_or_revival",
+      "label_zh": "复活/苏醒",
+      "description": "A dead, near-dead, dormant, or unconscious entity revives.",
+      "allowed_subtypes": [
+        "revive",
+        "resurrect",
+        "awaken",
+        "recover_consciousness",
+        "restore_body"
+      ],
+      "default_argument_roles": [
+        "patient",
+        "cause",
+        "method",
+        "current_location",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "revival_change",
+        "injury_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Separate true resurrection from ordinary recovery during review."
+    },
+    {
+      "event_type": "capture",
+      "label_zh": "捕获/囚禁",
+      "description": "A subject is restrained, imprisoned, sealed, or taken by force.",
+      "allowed_subtypes": [
+        "capture",
+        "imprison",
+        "seal_prison",
+        "restrain",
+        "kidnap",
+        "detain"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "patient",
+        "current_location",
+        "method",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "captivity_change",
+        "location_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Capture does not imply later custody state without evidence."
+    },
+    {
+      "event_type": "escape",
+      "label_zh": "逃脱",
+      "description": "A subject flees or breaks out of danger, confinement, or pursuit.",
+      "allowed_subtypes": [
+        "escape",
+        "break_out",
+        "evade_capture",
+        "flee_scene",
+        "slip_away"
+      ],
+      "default_argument_roles": [
+        "mover",
+        "origin_location",
+        "destination_location",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "captivity_change",
+        "location_change",
+        "scene_presence_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Escape may be a movement subtype, but remains separate when captivity is present."
+    },
+    {
+      "event_type": "search",
+      "label_zh": "搜寻",
+      "description": "An entity searches, tracks, probes, or investigates a target.",
+      "allowed_subtypes": [
+        "search_area",
+        "track",
+        "probe",
+        "inspect",
+        "scan",
+        "look_for"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "current_location",
+        "method",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "mission_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Search is distinct from discovery; success requires discovery evidence."
+    },
+    {
+      "event_type": "discovery",
+      "label_zh": "发现",
+      "description": "A subject finds or notices an entity, place, fact, object, or clue.",
+      "allowed_subtypes": [
+        "find_person",
+        "find_location",
+        "find_object",
+        "notice_clue",
+        "detect_power",
+        "discover_rule"
+      ],
+      "default_argument_roles": [
+        "discoverer",
+        "revealed_entity",
+        "current_location",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "object_ownership_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Discovery changes knowledge, not necessarily the discovered entity."
+    },
+    {
+      "event_type": "reveal",
+      "label_zh": "揭示",
+      "description": "Information, identity, rule, relationship, or hidden fact is revealed.",
+      "allowed_subtypes": [
+        "identity_reveal",
+        "truth_reveal",
+        "rule_reveal",
+        "relationship_reveal",
+        "plan_reveal",
+        "name_reveal"
+      ],
+      "default_argument_roles": [
+        "speaker",
+        "revealed_entity",
+        "observer",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "identity_change",
+        "relationship_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Treat revealed content as a claim until review confirms evidence."
+    },
+    {
+      "event_type": "decision",
+      "label_zh": "决定",
+      "description": "A subject chooses a plan, action, stance, route, or judgment.",
+      "allowed_subtypes": [
+        "choose",
+        "decide_to_go",
+        "decide_to_fight",
+        "refuse",
+        "accept_task",
+        "change_plan"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "cause",
+        "result",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "mission_state_change",
+        "mental_state_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Intent is not execution; keep decision separate from later action."
+    },
+    {
+      "event_type": "promise_or_oath",
+      "label_zh": "承诺/誓言",
+      "description": "A character promises, swears, vows, or makes a binding statement.",
+      "allowed_subtypes": [
+        "promise",
+        "oath",
+        "vow",
+        "pledge",
+        "contract"
+      ],
+      "default_argument_roles": [
+        "speaker",
+        "listener",
+        "object",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "relationship_change",
+        "mission_state_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Promise content is captured as evidence, not executed."
+    },
+    {
+      "event_type": "betrayal",
+      "label_zh": "背叛",
+      "description": "A subject breaks loyalty, exposes an ally, or acts against a trusted party.",
+      "allowed_subtypes": [
+        "betray_ally",
+        "defect",
+        "expose_secret",
+        "break_oath",
+        "sell_out"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "faction",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "relationship_change",
+        "hostility_change",
+        "alliance_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Requires explicit evidence of trust or affiliation being violated."
+    },
+    {
+      "event_type": "alliance",
+      "label_zh": "结盟",
+      "description": "Two or more entities form, maintain, or declare cooperation.",
+      "allowed_subtypes": [
+        "form_alliance",
+        "join_forces",
+        "temporary_truce",
+        "cooperate",
+        "pledge_support"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "faction",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "alliance_change",
+        "relationship_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Alliance requires evidence of cooperation, not just shared location."
+    },
+    {
+      "event_type": "separation",
+      "label_zh": "分离",
+      "description": "Characters, groups, or entities separate physically, socially, or narratively.",
+      "allowed_subtypes": [
+        "part_ways",
+        "lose_contact",
+        "split_group",
+        "forced_separation",
+        "leave_team"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "origin_location",
+        "destination_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "relationship_change",
+        "location_change",
+        "scene_presence_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Separate from betrayal unless hostile intent is present."
+    },
+    {
+      "event_type": "reunion",
+      "label_zh": "重逢",
+      "description": "Previously separated entities meet again.",
+      "allowed_subtypes": [
+        "reunite",
+        "return_to_group",
+        "meet_again",
+        "recover_contact"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "current_location",
+        "time_hint",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "relationship_change",
+        "scene_presence_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Requires prior or implied separation only as review context, not inference."
+    },
+    {
+      "event_type": "identity_change",
+      "label_zh": "身份变化",
+      "description": "A character's identity, name, role, or recognized status changes.",
+      "allowed_subtypes": [
+        "name_change",
+        "identity_revealed",
+        "role_change",
+        "status_identity_change",
+        "true_form_revealed"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "result",
+        "observer",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "identity_change",
+        "status_change",
+        "knowledge_state_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Keep distinct from disguise or impersonation."
+    },
+    {
+      "event_type": "disguise_or_impersonation",
+      "label_zh": "伪装/冒充",
+      "description": "A subject hides, masks, imitates, or performs another identity.",
+      "allowed_subtypes": [
+        "disguise",
+        "impersonate",
+        "mask_identity",
+        "use_alias",
+        "enter_role",
+        "fake_status"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "method",
+        "observer",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "disguise_state_change",
+        "identity_change",
+        "knowledge_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Disguise can support performance but must not imply true identity change."
+    },
+    {
+      "event_type": "ability_use",
+      "label_zh": "能力使用",
+      "description": "A power, skill, domain effect, or supernatural ability is used.",
+      "allowed_subtypes": [
+        "activate_power",
+        "release_skill",
+        "domain_like_effect",
+        "illusion",
+        "summon",
+        "seal",
+        "heal",
+        "curse",
+        "observe",
+        "control"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "power",
+        "ability",
+        "target",
+        "method",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "power_change",
+        "injury_change",
+        "knowledge_state_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Usage does not imply power upgrade."
+    },
+    {
+      "event_type": "power_upgrade",
+      "label_zh": "力量升级",
+      "description": "A subject gains, upgrades, awakens, loses, or changes power level.",
+      "allowed_subtypes": [
+        "awaken",
+        "upgrade",
+        "breakthrough",
+        "stage_change",
+        "gain_power",
+        "lose_power",
+        "domain_awaken"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "power",
+        "ability",
+        "cause",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "power_change",
+        "power_level_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Future normalization must distinguish awakening, usage, and level change."
+    },
+    {
+      "event_type": "ritual",
+      "label_zh": "仪式",
+      "description": "A formal ritual, sacrifice, invocation, sealing, or ceremonial act occurs.",
+      "allowed_subtypes": [
+        "perform_ritual",
+        "sacrifice_ritual",
+        "seal_ritual",
+        "summon_ritual",
+        "initiation",
+        "offering"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "method",
+        "artifact",
+        "current_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "power_change",
+        "world_rule_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not infer ritual result unless explicit."
+    },
+    {
+      "event_type": "performance",
+      "label_zh": "表演/入戏",
+      "description": "A theatrical, staged, role-based, mask, or audience-facing action occurs.",
+      "allowed_subtypes": [
+        "enter_role",
+        "perform_scene",
+        "stage_action",
+        "mask_identity",
+        "break_character",
+        "audience_reaction"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "observer",
+        "scene",
+        "method",
+        "evidence"
+      ],
+      "state_change_types_allowed": [
+        "disguise_state_change",
+        "emotional_state_change",
+        "knowledge_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Kept for 戏神道, performance, stage, disguise, and role-play related events."
+    },
+    {
+      "event_type": "organization_action",
+      "label_zh": "组织行动",
+      "description": "An organization meets, acts, exposes itself, attacks, collapses, or changes structure.",
+      "allowed_subtypes": [
+        "meeting",
+        "operation",
+        "exposure",
+        "foundation",
+        "collapse",
+        "recruit",
+        "expel",
+        "order"
+      ],
+      "default_argument_roles": [
+        "organization",
+        "agent",
+        "target",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "organization_membership_change",
+        "authority_change",
+        "mission_state_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Organization statements need explicit evidence and entity review."
+    },
+    {
+      "event_type": "mission_assignment",
+      "label_zh": "任务分派",
+      "description": "A mission, order, request, assignment, or operational task is created or changed.",
+      "allowed_subtypes": [
+        "assign_task",
+        "receive_task",
+        "complete_task",
+        "fail_task",
+        "cancel_task",
+        "change_objective"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "subject",
+        "object",
+        "organization",
+        "time_hint",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "mission_state_change",
+        "authority_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Assignment is distinct from mission completion."
+    },
+    {
+      "event_type": "investigation",
+      "label_zh": "调查",
+      "description": "A subject systematically investigates a person, event, place, clue, or rule.",
+      "allowed_subtypes": [
+        "investigate_person",
+        "investigate_scene",
+        "interrogate",
+        "analyze_clue",
+        "audit_record",
+        "follow_lead"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "evidence",
+        "method",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "mission_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Use discovery or reveal when information is actually found."
+    },
+    {
+      "event_type": "trial_or_judgment",
+      "label_zh": "审判/裁决",
+      "description": "An authority judges, sentences, condemns, clears, or decides a case.",
+      "allowed_subtypes": [
+        "trial",
+        "judgment",
+        "sentence",
+        "condemn",
+        "acquit",
+        "punish"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "patient",
+        "organization",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "authority_change",
+        "status_change",
+        "captivity_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Judgment does not imply sentence execution."
+    },
+    {
+      "event_type": "world_rule_change",
+      "label_zh": "世界规则变化",
+      "description": "A world rule, domain boundary, godway principle, disaster law, or setting-level rule shifts.",
+      "allowed_subtypes": [
+        "rule_revealed",
+        "rule_changed",
+        "boundary_shift",
+        "domain_rule",
+        "godway_rule",
+        "red_star_shift",
+        "disaster_law_change"
+      ],
+      "default_argument_roles": [
+        "cause",
+        "result",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "world_rule_change",
+        "environment_change",
+        "knowledge_state_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Kept for rules, boundaries, red star, godway, and disaster shifts."
+    },
+    {
+      "event_type": "disaster_event",
+      "label_zh": "灾厄事件",
+      "description": "A disaster, gray tide, gray world, contamination, mutation, or annihilation event occurs.",
+      "allowed_subtypes": [
+        "disaster_appears",
+        "disaster_attacks",
+        "gray_tide",
+        "invasion",
+        "contamination",
+        "mutation",
+        "annihilation",
+        "suppression"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "current_location",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "disaster_state_change",
+        "environment_change",
+        "injury_change",
+        "death_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Kept for 灾厄, 灰界, 灰潮, contamination, and suppression."
+    },
+    {
+      "event_type": "invasion",
+      "label_zh": "入侵",
+      "description": "A hostile force, disaster, organization, or entity enters territory or domain.",
+      "allowed_subtypes": [
+        "invade_domain",
+        "breach_boundary",
+        "occupy",
+        "intrude",
+        "gray_world_intrusion"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "origin_location",
+        "destination_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "location_change",
+        "environment_change",
+        "hostility_change",
+        "disaster_state_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Use disaster_event if the main evidence is disaster behavior."
+    },
+    {
+      "event_type": "battle",
+      "label_zh": "战斗",
+      "description": "A large-scale or named fight involving multiple actions or organized sides.",
+      "allowed_subtypes": [
+        "duel",
+        "skirmish",
+        "group_battle",
+        "siege",
+        "war",
+        "final_battle",
+        "domain_battle"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "target",
+        "faction",
+        "current_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "hostility_change",
+        "injury_change",
+        "death_change",
+        "environment_change"
+      ],
+      "is_major_event_candidate": true,
+      "normalization_notes": "Individual attacks may remain separate candidates until reviewed."
+    },
+    {
+      "event_type": "scene_transition",
+      "label_zh": "场景转换",
+      "description": "Narrative moves to a new scene, time, place, or viewpoint.",
+      "allowed_subtypes": [
+        "scene_start",
+        "scene_end",
+        "time_skip",
+        "viewpoint_shift",
+        "location_shift",
+        "flashback_enter",
+        "flashback_exit"
+      ],
+      "default_argument_roles": [
+        "scene",
+        "chapter",
+        "time_hint",
+        "current_location"
+      ],
+      "state_change_types_allowed": [
+        "scene_presence_change",
+        "location_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Minor by default unless tied to major plot change."
+    },
+    {
+      "event_type": "internal_state",
+      "label_zh": "内心/状态",
+      "description": "A character's emotional, mental, or internal condition changes.",
+      "allowed_subtypes": [
+        "realize",
+        "fear",
+        "resolve",
+        "hesitate",
+        "remember",
+        "forget",
+        "despair",
+        "calm_down"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "cause",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "emotional_state_change",
+        "mental_state_change",
+        "knowledge_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Avoid converting every thought into a major event."
+    },
+    {
+      "event_type": "object_transfer",
+      "label_zh": "物品转移",
+      "description": "An object, artifact, weapon, token, or evidence item is obtained, lost, destroyed, or transferred.",
+      "allowed_subtypes": [
+        "obtain",
+        "lose",
+        "give",
+        "receive",
+        "steal",
+        "destroy_object",
+        "transfer",
+        "equip_weapon"
+      ],
+      "default_argument_roles": [
+        "agent",
+        "patient",
+        "artifact",
+        "weapon",
+        "origin_location",
+        "destination_location",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "object_ownership_change",
+        "resource_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Object ownership needs an object candidate or reviewed evidence."
+    },
+    {
+      "event_type": "resource_change",
+      "label_zh": "资源变化",
+      "description": "A resource, currency, material, life force, power reserve, or count changes.",
+      "allowed_subtypes": [
+        "gain_resource",
+        "lose_resource",
+        "consume_resource",
+        "recover_resource",
+        "deplete_resource"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "resource",
+        "cause",
+        "result",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "resource_change",
+        "power_change",
+        "status_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not calculate amounts if text does not provide them."
+    },
+    {
+      "event_type": "knowledge_change",
+      "label_zh": "认知变化",
+      "description": "A subject learns, forgets, understands, misunderstands, or receives information.",
+      "allowed_subtypes": [
+        "learn",
+        "realize",
+        "remember",
+        "forget",
+        "misunderstand",
+        "receive_information",
+        "confirm_information"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "revealed_entity",
+        "evidence",
+        "cause",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "knowledge_state_change",
+        "mental_state_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Many reveal and discovery events also create knowledge changes."
+    },
+    {
+      "event_type": "relationship_change",
+      "label_zh": "关系变化",
+      "description": "The relationship between entities changes.",
+      "allowed_subtypes": [
+        "become_allies",
+        "become_enemies",
+        "reconcile",
+        "break_trust",
+        "meet_again",
+        "separate"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "object",
+        "cause",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "relationship_change",
+        "alliance_change",
+        "hostility_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Do not infer relationship labels from proximity alone."
+    },
+    {
+      "event_type": "status_change",
+      "label_zh": "通用状态变化",
+      "description": "A safe generic event type for reviewed but not yet specific state/status changes.",
+      "allowed_subtypes": [
+        "status_begin",
+        "status_end",
+        "status_unknown",
+        "state_marked",
+        "condition_change"
+      ],
+      "default_argument_roles": [
+        "subject",
+        "cause",
+        "result",
+        "evidence",
+        "scene"
+      ],
+      "state_change_types_allowed": [
+        "status_change",
+        "environment_change",
+        "scene_presence_change"
+      ],
+      "is_major_event_candidate": false,
+      "normalization_notes": "Safe fallback for unknown trigger categories."
+    }
+  ],
+  "state_change_type_catalog": [
+    {
+      "state_change_type": "location_change",
+      "label_zh": "位置变化",
+      "description": "Entity location or spatial relationship changes.",
+      "allowed_event_types": [
+        "movement",
+        "escape",
+        "capture",
+        "invasion",
+        "scene_transition"
+      ],
+      "default_before_field": "origin_location",
+      "default_after_field": "destination_location",
+      "normalization_notes": "Unknown endpoints remain empty until reviewed."
+    },
+    {
+      "state_change_type": "identity_change",
+      "label_zh": "身份变化",
+      "description": "Identity, name, role, or recognized status changes.",
+      "allowed_event_types": [
+        "identity_change",
+        "reveal",
+        "disguise_or_impersonation"
+      ],
+      "default_before_field": "previous_identity",
+      "default_after_field": "current_identity",
+      "normalization_notes": "Do not infer canonical identity without reviewed entity mapping."
+    },
+    {
+      "state_change_type": "disguise_state_change",
+      "label_zh": "伪装状态变化",
+      "description": "Disguise, mask, alias, impersonation, or role state changes.",
+      "allowed_event_types": [
+        "disguise_or_impersonation",
+        "performance"
+      ],
+      "default_before_field": "previous_disguise_state",
+      "default_after_field": "current_disguise_state",
+      "normalization_notes": "Disguise is not final identity."
+    },
+    {
+      "state_change_type": "relationship_change",
+      "label_zh": "关系变化",
+      "description": "Relationship state changes between two entities.",
+      "allowed_event_types": [
+        "relationship_change",
+        "alliance",
+        "betrayal",
+        "reunion",
+        "separation",
+        "encounter",
+        "dialogue",
+        "reveal"
+      ],
+      "default_before_field": "previous_relationship",
+      "default_after_field": "current_relationship",
+      "normalization_notes": "Requires explicit evidence or review decision."
+    },
+    {
+      "state_change_type": "injury_change",
+      "label_zh": "伤势变化",
+      "description": "Health, wound, damage, or consciousness state changes.",
+      "allowed_event_types": [
+        "injury",
+        "attack",
+        "defense",
+        "battle",
+        "disaster_event"
+      ],
+      "default_before_field": "previous_injury_state",
+      "default_after_field": "current_injury_state",
+      "normalization_notes": "Do not convert injury into death without death evidence."
+    },
+    {
+      "state_change_type": "death_change",
+      "label_zh": "生死变化",
+      "description": "Alive/dead or destroyed state changes.",
+      "allowed_event_types": [
+        "death",
+        "attack",
+        "battle",
+        "disaster_event"
+      ],
+      "default_before_field": "previous_life_state",
+      "default_after_field": "current_life_state",
+      "normalization_notes": "High-impact state change requiring explicit evidence."
+    },
+    {
+      "state_change_type": "revival_change",
+      "label_zh": "复苏变化",
+      "description": "Dead, dormant, unconscious, or disabled state changes toward revival or recovery.",
+      "allowed_event_types": [
+        "resurrection_or_revival"
+      ],
+      "default_before_field": "previous_life_state",
+      "default_after_field": "current_life_state",
+      "normalization_notes": "Separate revival from ordinary healing when possible."
+    },
+    {
+      "state_change_type": "power_change",
+      "label_zh": "能力变化",
+      "description": "Power presence, skill state, ability state, or usage state changes.",
+      "allowed_event_types": [
+        "ability_use",
+        "power_upgrade",
+        "ritual",
+        "resource_change"
+      ],
+      "default_before_field": "previous_power_state",
+      "default_after_field": "current_power_state",
+      "normalization_notes": "Usage and acquisition are separate review concepts."
+    },
+    {
+      "state_change_type": "power_level_change",
+      "label_zh": "力量层级变化",
+      "description": "Rank, stage, realm, or power level changes.",
+      "allowed_event_types": [
+        "power_upgrade"
+      ],
+      "default_before_field": "previous_power_level",
+      "default_after_field": "current_power_level",
+      "normalization_notes": "Never invent level names."
+    },
+    {
+      "state_change_type": "organization_membership_change",
+      "label_zh": "组织成员变化",
+      "description": "Membership or affiliation in an organization changes.",
+      "allowed_event_types": [
+        "organization_action",
+        "mission_assignment",
+        "alliance",
+        "betrayal"
+      ],
+      "default_before_field": "previous_membership",
+      "default_after_field": "current_membership",
+      "normalization_notes": "Review organization identity before canonicalizing."
+    },
+    {
+      "state_change_type": "authority_change",
+      "label_zh": "权限变化",
+      "description": "Authority, command, rank, judgment, or authorization changes.",
+      "allowed_event_types": [
+        "organization_action",
+        "mission_assignment",
+        "trial_or_judgment"
+      ],
+      "default_before_field": "previous_authority",
+      "default_after_field": "current_authority",
+      "normalization_notes": "Authority claims are evidence-bound."
+    },
+    {
+      "state_change_type": "knowledge_state_change",
+      "label_zh": "认知状态变化",
+      "description": "Known, unknown, understood, revealed, or suspected state changes.",
+      "allowed_event_types": [
+        "dialogue",
+        "discovery",
+        "reveal",
+        "investigation",
+        "knowledge_change",
+        "world_rule_change",
+        "performance"
+      ],
+      "default_before_field": "previous_knowledge_state",
+      "default_after_field": "current_knowledge_state",
+      "normalization_notes": "Knowledge may belong to observer, speaker, or subject."
+    },
+    {
+      "state_change_type": "emotional_state_change",
+      "label_zh": "情绪变化",
+      "description": "Emotional state changes.",
+      "allowed_event_types": [
+        "internal_state",
+        "dialogue",
+        "performance"
+      ],
+      "default_before_field": "previous_emotional_state",
+      "default_after_field": "current_emotional_state",
+      "normalization_notes": "Minor by default unless explicit and plot-critical."
+    },
+    {
+      "state_change_type": "mental_state_change",
+      "label_zh": "心理变化",
+      "description": "Mental, intent, memory, or resolve state changes.",
+      "allowed_event_types": [
+        "internal_state",
+        "decision",
+        "conflict",
+        "knowledge_change"
+      ],
+      "default_before_field": "previous_mental_state",
+      "default_after_field": "current_mental_state",
+      "normalization_notes": "Avoid over-indexing generic narration."
+    },
+    {
+      "state_change_type": "object_ownership_change",
+      "label_zh": "物品归属变化",
+      "description": "Ownership or possession of an object changes.",
+      "allowed_event_types": [
+        "object_transfer",
+        "discovery"
+      ],
+      "default_before_field": "previous_owner",
+      "default_after_field": "current_owner",
+      "normalization_notes": "Object and owner candidates require review."
+    },
+    {
+      "state_change_type": "resource_change",
+      "label_zh": "资源变化",
+      "description": "Resource amount, status, or availability changes.",
+      "allowed_event_types": [
+        "resource_change",
+        "object_transfer"
+      ],
+      "default_before_field": "previous_resource_state",
+      "default_after_field": "current_resource_state",
+      "normalization_notes": "Do not compute quantities."
+    },
+    {
+      "state_change_type": "mission_state_change",
+      "label_zh": "任务状态变化",
+      "description": "Mission or objective state changes.",
+      "allowed_event_types": [
+        "mission_assignment",
+        "decision",
+        "search",
+        "investigation",
+        "organization_action"
+      ],
+      "default_before_field": "previous_mission_state",
+      "default_after_field": "current_mission_state",
+      "normalization_notes": "Assigned, active, complete, failed, or canceled require evidence."
+    },
+    {
+      "state_change_type": "captivity_change",
+      "label_zh": "囚禁状态变化",
+      "description": "Captivity, confinement, restraint, or release state changes.",
+      "allowed_event_types": [
+        "capture",
+        "escape",
+        "defense",
+        "trial_or_judgment"
+      ],
+      "default_before_field": "previous_captivity_state",
+      "default_after_field": "current_captivity_state",
+      "normalization_notes": "Confinement state should be manually reviewed."
+    },
+    {
+      "state_change_type": "alliance_change",
+      "label_zh": "同盟变化",
+      "description": "Alliance state changes.",
+      "allowed_event_types": [
+        "alliance",
+        "betrayal",
+        "relationship_change"
+      ],
+      "default_before_field": "previous_alliance_state",
+      "default_after_field": "current_alliance_state",
+      "normalization_notes": "Temporary cooperation and formal alliance are separate review outcomes."
+    },
+    {
+      "state_change_type": "hostility_change",
+      "label_zh": "敌对变化",
+      "description": "Hostility, enmity, conflict, or threat state changes.",
+      "allowed_event_types": [
+        "conflict",
+        "attack",
+        "battle",
+        "betrayal",
+        "invasion"
+      ],
+      "default_before_field": "previous_hostility_state",
+      "default_after_field": "current_hostility_state",
+      "normalization_notes": "Hostility requires explicit hostile action or statement."
+    },
+    {
+      "state_change_type": "world_rule_change",
+      "label_zh": "世界规则变化",
+      "description": "World rule, boundary, godway, or domain rule changes.",
+      "allowed_event_types": [
+        "world_rule_change",
+        "ritual"
+      ],
+      "default_before_field": "previous_world_rule_state",
+      "default_after_field": "current_world_rule_state",
+      "normalization_notes": "Do not infer setting laws without evidence."
+    },
+    {
+      "state_change_type": "environment_change",
+      "label_zh": "环境变化",
+      "description": "Scene, domain, disaster, weather-like, or environment state changes.",
+      "allowed_event_types": [
+        "world_rule_change",
+        "disaster_event",
+        "invasion",
+        "battle",
+        "status_change"
+      ],
+      "default_before_field": "previous_environment_state",
+      "default_after_field": "current_environment_state",
+      "normalization_notes": "Environment change may be local or world-level."
+    },
+    {
+      "state_change_type": "disaster_state_change",
+      "label_zh": "灾厄状态变化",
+      "description": "Disaster manifestation, contamination, suppression, or defeat state changes.",
+      "allowed_event_types": [
+        "disaster_event",
+        "invasion",
+        "attack",
+        "defense"
+      ],
+      "default_before_field": "previous_disaster_state",
+      "default_after_field": "current_disaster_state",
+      "normalization_notes": "Disaster entities require review before canonical mapping."
+    },
+    {
+      "state_change_type": "scene_presence_change",
+      "label_zh": "场景在场变化",
+      "description": "An entity becomes present or absent in a scene.",
+      "allowed_event_types": [
+        "movement",
+        "encounter",
+        "escape",
+        "scene_transition",
+        "separation",
+        "reunion"
+      ],
+      "default_before_field": "previous_scene_presence",
+      "default_after_field": "current_scene_presence",
+      "normalization_notes": "Derived scene presence must stay candidate-only until L5.3."
+    },
+    {
+      "state_change_type": "status_change",
+      "label_zh": "通用状态变化",
+      "description": "Generic status change not yet classified more specifically.",
+      "allowed_event_types": [
+        "status_change",
+        "decision",
+        "death",
+        "injury",
+        "capture",
+        "resource_change"
+      ],
+      "default_before_field": "previous_status",
+      "default_after_field": "current_status",
+      "normalization_notes": "Generic fallback for safe future normalization."
+    }
+  ],
+  "argument_role_catalog": [
+    {
+      "role": "subject",
+      "label_zh": "主体",
+      "description": "Primary entity involved in the event.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "disaster",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "decision",
+        "internal_state",
+        "knowledge_change",
+        "relationship_change",
+        "status_change"
+      ],
+      "optional_for_event_types": [
+        "encounter",
+        "dialogue",
+        "conflict",
+        "alliance",
+        "separation",
+        "reunion",
+        "power_upgrade",
+        "resource_change"
+      ],
+      "normalization_notes": "Use unknown if no reviewed subject exists."
+    },
+    {
+      "role": "object",
+      "label_zh": "对象",
+      "description": "Secondary entity, statement, task, or thing involved.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "artifact",
+        "power",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "dialogue",
+        "decision",
+        "promise_or_oath",
+        "relationship_change",
+        "mission_assignment"
+      ],
+      "normalization_notes": "Object is generic; prefer target, patient, or artifact when known."
+    },
+    {
+      "role": "target",
+      "label_zh": "目标",
+      "description": "Entity, place, or group targeted by an action.",
+      "allowed_entity_kinds": [
+        "character",
+        "location",
+        "organization",
+        "disaster",
+        "artifact",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "attack"
+      ],
+      "optional_for_event_types": [
+        "defense",
+        "search",
+        "investigation",
+        "invasion",
+        "battle",
+        "disaster_event"
+      ],
+      "normalization_notes": "Do not invent target if text only has an action."
+    },
+    {
+      "role": "agent",
+      "label_zh": "施事者",
+      "description": "Entity that performs an action.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "disaster",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "attack",
+        "defense"
+      ],
+      "optional_for_event_types": [
+        "capture",
+        "search",
+        "ritual",
+        "organization_action",
+        "investigation",
+        "trial_or_judgment",
+        "object_transfer"
+      ],
+      "normalization_notes": "Agent may be unknown for passive evidence."
+    },
+    {
+      "role": "patient",
+      "label_zh": "受事者",
+      "description": "Entity affected by injury, death, revival, capture, or judgment.",
+      "allowed_entity_kinds": [
+        "character",
+        "disaster",
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "injury",
+        "death",
+        "resurrection_or_revival"
+      ],
+      "optional_for_event_types": [
+        "capture",
+        "trial_or_judgment",
+        "object_transfer"
+      ],
+      "normalization_notes": "Patient is distinct from target when harm result is explicit."
+    },
+    {
+      "role": "speaker",
+      "label_zh": "说话者",
+      "description": "Entity that speaks or communicates.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "dialogue"
+      ],
+      "optional_for_event_types": [
+        "reveal",
+        "promise_or_oath"
+      ],
+      "normalization_notes": "Speaker may be absent in indirect narration."
+    },
+    {
+      "role": "listener",
+      "label_zh": "听话者",
+      "description": "Entity receiving speech or communication.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "dialogue",
+        "promise_or_oath"
+      ],
+      "normalization_notes": "Listener can be group or unknown."
+    },
+    {
+      "role": "observer",
+      "label_zh": "观察者",
+      "description": "Entity that witnesses, observes, or becomes aware.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "encounter",
+        "reveal",
+        "disguise_or_impersonation",
+        "performance"
+      ],
+      "normalization_notes": "Observation changes knowledge only after review."
+    },
+    {
+      "role": "discoverer",
+      "label_zh": "发现者",
+      "description": "Entity that finds or notices something.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "discovery"
+      ],
+      "optional_for_event_types": [],
+      "normalization_notes": "Required for discovery if available."
+    },
+    {
+      "role": "revealed_entity",
+      "label_zh": "被揭示对象",
+      "description": "Fact, entity, identity, rule, or clue revealed or discovered.",
+      "allowed_entity_kinds": [
+        "character",
+        "location",
+        "organization",
+        "power",
+        "artifact",
+        "disaster",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "reveal"
+      ],
+      "optional_for_event_types": [
+        "discovery",
+        "knowledge_change"
+      ],
+      "normalization_notes": "May remain raw candidate until reviewed."
+    },
+    {
+      "role": "mover",
+      "label_zh": "移动者",
+      "description": "Entity that moves or changes presence.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "disaster",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "movement"
+      ],
+      "optional_for_event_types": [
+        "escape"
+      ],
+      "normalization_notes": "Movement can involve disaster or organization as entity."
+    },
+    {
+      "role": "origin_location",
+      "label_zh": "起点",
+      "description": "Location before movement or transfer.",
+      "allowed_entity_kinds": [
+        "location",
+        "scene",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "movement",
+        "escape",
+        "separation",
+        "object_transfer",
+        "invasion"
+      ],
+      "normalization_notes": "Leave empty if not explicit."
+    },
+    {
+      "role": "destination_location",
+      "label_zh": "终点",
+      "description": "Location after movement or transfer.",
+      "allowed_entity_kinds": [
+        "location",
+        "scene",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "movement",
+        "escape",
+        "object_transfer",
+        "invasion"
+      ],
+      "normalization_notes": "Leave empty if not explicit."
+    },
+    {
+      "role": "current_location",
+      "label_zh": "当前位置",
+      "description": "Location or scene where the event occurs.",
+      "allowed_entity_kinds": [
+        "location",
+        "scene",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "encounter",
+        "attack",
+        "battle",
+        "disaster_event",
+        "trial_or_judgment"
+      ],
+      "normalization_notes": "May be scene-derived later, not in L5.2."
+    },
+    {
+      "role": "time_hint",
+      "label_zh": "时间提示",
+      "description": "Narrative or story-time hint.",
+      "allowed_entity_kinds": [
+        "time",
+        "chapter",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "movement",
+        "dialogue",
+        "encounter",
+        "scene_transition",
+        "mission_assignment"
+      ],
+      "normalization_notes": "Time hints are not canonical timeline positions."
+    },
+    {
+      "role": "organization",
+      "label_zh": "组织",
+      "description": "Organization directly involved.",
+      "allowed_entity_kinds": [
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "organization_action"
+      ],
+      "optional_for_event_types": [
+        "mission_assignment",
+        "alliance",
+        "betrayal"
+      ],
+      "normalization_notes": "Requires organization review for canonical IDs."
+    },
+    {
+      "role": "faction",
+      "label_zh": "阵营",
+      "description": "Side, faction, group, or alliance position.",
+      "allowed_entity_kinds": [
+        "organization",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "alliance",
+        "betrayal",
+        "battle",
+        "conflict"
+      ],
+      "normalization_notes": "Do not invent faction labels."
+    },
+    {
+      "role": "power",
+      "label_zh": "力量",
+      "description": "Power system entity involved.",
+      "allowed_entity_kinds": [
+        "power",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "ability_use",
+        "power_upgrade",
+        "resource_change"
+      ],
+      "normalization_notes": "Power references require reviewed seed/catalog mapping."
+    },
+    {
+      "role": "ability",
+      "label_zh": "能力",
+      "description": "Specific ability or skill used.",
+      "allowed_entity_kinds": [
+        "power",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "ability_use",
+        "attack",
+        "defense",
+        "power_upgrade"
+      ],
+      "normalization_notes": "Ability can remain raw text."
+    },
+    {
+      "role": "artifact",
+      "label_zh": "物品/神器",
+      "description": "Object or artifact involved.",
+      "allowed_entity_kinds": [
+        "artifact",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "object_transfer",
+        "ritual"
+      ],
+      "normalization_notes": "No automatic artifact resolution."
+    },
+    {
+      "role": "weapon",
+      "label_zh": "武器",
+      "description": "Weapon used in attack or defense.",
+      "allowed_entity_kinds": [
+        "artifact",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "attack",
+        "defense",
+        "battle",
+        "object_transfer"
+      ],
+      "normalization_notes": "Weapon can be raw object candidate."
+    },
+    {
+      "role": "resource",
+      "label_zh": "资源",
+      "description": "Resource that changes or is consumed.",
+      "allowed_entity_kinds": [
+        "artifact",
+        "power",
+        "unknown"
+      ],
+      "required_for_event_types": [
+        "resource_change"
+      ],
+      "optional_for_event_types": [
+        "object_transfer"
+      ],
+      "normalization_notes": "No numeric inference."
+    },
+    {
+      "role": "cause",
+      "label_zh": "原因",
+      "description": "Cause or trigger behind an event.",
+      "allowed_entity_kinds": [
+        "character",
+        "organization",
+        "power",
+        "disaster",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "decision",
+        "injury",
+        "death",
+        "world_rule_change",
+        "resource_change",
+        "status_change"
+      ],
+      "normalization_notes": "Causal claims need evidence."
+    },
+    {
+      "role": "result",
+      "label_zh": "结果",
+      "description": "Result or outcome indicated by evidence.",
+      "allowed_entity_kinds": [
+        "character",
+        "location",
+        "organization",
+        "power",
+        "artifact",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "decision",
+        "identity_change",
+        "world_rule_change",
+        "resource_change",
+        "status_change"
+      ],
+      "normalization_notes": "Result should stay textual until normalized later."
+    },
+    {
+      "role": "method",
+      "label_zh": "方式",
+      "description": "Method, mechanism, or manner of action.",
+      "allowed_entity_kinds": [
+        "power",
+        "artifact",
+        "world_rule",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "defense",
+        "search",
+        "ritual",
+        "investigation",
+        "ability_use",
+        "capture"
+      ],
+      "normalization_notes": "No hidden method inference."
+    },
+    {
+      "role": "evidence",
+      "label_zh": "证据",
+      "description": "Evidence text or evidence anchor.",
+      "allowed_entity_kinds": [
+        "chapter",
+        "scene",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "dialogue",
+        "injury",
+        "death",
+        "reveal",
+        "discovery",
+        "knowledge_change"
+      ],
+      "normalization_notes": "Future normalized rows must retain evidence coordinates and hash."
+    },
+    {
+      "role": "scene",
+      "label_zh": "场景",
+      "description": "Scene block or narrative scene.",
+      "allowed_entity_kinds": [
+        "scene",
+        "chapter",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "movement",
+        "dialogue",
+        "battle",
+        "scene_transition",
+        "performance"
+      ],
+      "normalization_notes": "Scene source is optional in L5.0/L5.1 and must not be invented."
+    },
+    {
+      "role": "chapter",
+      "label_zh": "章节",
+      "description": "Chapter anchor for the candidate.",
+      "allowed_entity_kinds": [
+        "chapter",
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "scene_transition"
+      ],
+      "normalization_notes": "Chapter is an anchor, not a story-time fact."
+    },
+    {
+      "role": "unknown",
+      "label_zh": "未知",
+      "description": "Placeholder role when a candidate lacks a reliable argument role.",
+      "allowed_entity_kinds": [
+        "unknown"
+      ],
+      "required_for_event_types": [],
+      "optional_for_event_types": [
+        "status_change"
+      ],
+      "normalization_notes": "Use only as explicit uncertainty marker."
+    }
+  ],
+  "trigger_category_mapping": [
+    {
+      "trigger_category": "movement",
+      "maps_to_event_type": "movement",
+      "default_subtype": "arrive",
+      "confidence_delta": 0.0,
+      "notes": "Canonical movement category."
+    },
+    {
+      "trigger_category": "dialogue",
+      "maps_to_event_type": "dialogue",
+      "default_subtype": "explain",
+      "confidence_delta": 0.0,
+      "notes": "Canonical dialogue category."
+    },
+    {
+      "trigger_category": "conflict",
+      "maps_to_event_type": "conflict",
+      "default_subtype": "physical_conflict",
+      "confidence_delta": 0.0,
+      "notes": "General conflict category."
+    },
+    {
+      "trigger_category": "attack",
+      "maps_to_event_type": "attack",
+      "default_subtype": "strike",
+      "confidence_delta": 0.0,
+      "notes": "Attack-specific category."
+    },
+    {
+      "trigger_category": "death",
+      "maps_to_event_type": "death",
+      "default_subtype": "dies",
+      "confidence_delta": 0.05,
+      "notes": "Explicit death candidate."
+    },
+    {
+      "trigger_category": "reveal",
+      "maps_to_event_type": "reveal",
+      "default_subtype": "truth_reveal",
+      "confidence_delta": 0.0,
+      "notes": "Reveal or information category."
+    },
+    {
+      "trigger_category": "decision",
+      "maps_to_event_type": "decision",
+      "default_subtype": "choose",
+      "confidence_delta": 0.0,
+      "notes": "Decision category."
+    },
+    {
+      "trigger_category": "state_change",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "condition_change",
+      "confidence_delta": -0.05,
+      "notes": "Generic state-change category."
+    },
+    {
+      "trigger_category": "ability",
+      "maps_to_event_type": "ability_use",
+      "default_subtype": "activate_power",
+      "confidence_delta": 0.0,
+      "notes": "Power or ability usage category."
+    },
+    {
+      "trigger_category": "organization",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "operation",
+      "confidence_delta": 0.0,
+      "notes": "Organization action category."
+    },
+    {
+      "trigger_category": "disaster",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "disaster_appears",
+      "confidence_delta": 0.05,
+      "notes": "Disaster and gray-world category."
+    },
+    {
+      "trigger_category": "location",
+      "maps_to_event_type": "movement",
+      "default_subtype": "enter",
+      "confidence_delta": 0.0,
+      "notes": "Location-triggered candidates usually normalize as movement or scene transition."
+    },
+    {
+      "trigger_category": "time",
+      "maps_to_event_type": "scene_transition",
+      "default_subtype": "time_skip",
+      "confidence_delta": -0.05,
+      "notes": "Time marker category."
+    },
+    {
+      "trigger_category": "identity",
+      "maps_to_event_type": "identity_change",
+      "default_subtype": "identity_revealed",
+      "confidence_delta": 0.0,
+      "notes": "Identity category."
+    },
+    {
+      "trigger_category": "relationship",
+      "maps_to_event_type": "relationship_change",
+      "default_subtype": "become_allies",
+      "confidence_delta": 0.0,
+      "notes": "Relationship category."
+    },
+    {
+      "trigger_category": "unknown",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "confidence_delta": -0.15,
+      "notes": "Explicit safe fallback for unknown categories."
+    },
+    {
+      "trigger_category": "character_event",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "confidence_delta": -0.05,
+      "notes": "L5.0 family; event_type_candidate mapping refines it later."
+    },
+    {
+      "trigger_category": "location_event",
+      "maps_to_event_type": "movement",
+      "default_subtype": "arrive",
+      "confidence_delta": -0.05,
+      "notes": "L5.0 family for location-related candidates."
+    },
+    {
+      "trigger_category": "domain_event",
+      "maps_to_event_type": "world_rule_change",
+      "default_subtype": "domain_rule",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 domain family."
+    },
+    {
+      "trigger_category": "gray_world_event",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "gray_tide",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 gray-world family."
+    },
+    {
+      "trigger_category": "power_event",
+      "maps_to_event_type": "ability_use",
+      "default_subtype": "activate_power",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 power family."
+    },
+    {
+      "trigger_category": "organization_event",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "operation",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 organization family."
+    },
+    {
+      "trigger_category": "object_event",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "transfer",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 object family."
+    },
+    {
+      "trigger_category": "relationship_event",
+      "maps_to_event_type": "relationship_change",
+      "default_subtype": "become_allies",
+      "confidence_delta": 0.0,
+      "notes": "L5.0 relationship family."
+    },
+    {
+      "trigger_category": "unknown_event",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "confidence_delta": -0.15,
+      "notes": "L5.0 unknown family safe fallback."
+    }
+  ],
+  "candidate_to_normalized_field_mapping": {
+    "event_candidate_id": "source_event_candidate_id",
+    "event_candidate_hash": "source_event_candidate_hash",
+    "chapter_id": "chapter_id",
+    "chapter_num": "chapter_num",
+    "chapter_title": "chapter_title",
+    "version_id": "version_id",
+    "scene_block_id": "scene_block_id",
+    "trigger_text": "trigger_text",
+    "trigger_rule_id": "trigger_rule_id",
+    "trigger_category": "trigger_category",
+    "event_type_candidate": "event_type",
+    "event_subtype_candidate": "event_subtype",
+    "subject_candidates_json": "subject_candidates",
+    "object_candidates_json": "object_candidates",
+    "location_candidates_json": "location_candidates",
+    "time_hint_candidates_json": "time_hint_candidates",
+    "organization_candidates_json": "organization_candidates",
+    "power_candidates_json": "power_candidates",
+    "evidence_text_backcut": "evidence_text",
+    "evidence_backcut_hash": "evidence_hash",
+    "confidence_score": "confidence_score",
+    "importance_candidate": "importance_level",
+    "warning_flags_json": "warning_flags",
+    "review_status": "review_status",
+    "review_decision": "review_decision",
+    "review_note": "review_note"
+  },
+  "l5_event_type_candidate_mapping": [
+    {
+      "event_type_candidate": "character_arrival",
+      "maps_to_event_type": "movement",
+      "default_subtype": "arrive",
+      "notes": "L5.0 character arrival."
+    },
+    {
+      "event_type_candidate": "character_departure",
+      "maps_to_event_type": "movement",
+      "default_subtype": "leave",
+      "notes": "L5.0 character departure."
+    },
+    {
+      "event_type_candidate": "character_meeting",
+      "maps_to_event_type": "encounter",
+      "default_subtype": "meet",
+      "notes": "L5.0 character meeting."
+    },
+    {
+      "event_type_candidate": "character_conflict",
+      "maps_to_event_type": "conflict",
+      "default_subtype": "physical_conflict",
+      "notes": "L5.0 character conflict."
+    },
+    {
+      "event_type_candidate": "character_attack",
+      "maps_to_event_type": "attack",
+      "default_subtype": "strike",
+      "notes": "L5.0 character attack."
+    },
+    {
+      "event_type_candidate": "character_injury",
+      "maps_to_event_type": "injury",
+      "default_subtype": "wound",
+      "notes": "L5.0 character injury."
+    },
+    {
+      "event_type_candidate": "character_death",
+      "maps_to_event_type": "death",
+      "default_subtype": "dies",
+      "notes": "L5.0 character death."
+    },
+    {
+      "event_type_candidate": "character_rescue",
+      "maps_to_event_type": "defense",
+      "default_subtype": "rescue",
+      "notes": "L5.0 rescue."
+    },
+    {
+      "event_type_candidate": "character_escape",
+      "maps_to_event_type": "escape",
+      "default_subtype": "escape",
+      "notes": "L5.0 escape."
+    },
+    {
+      "event_type_candidate": "character_identity_reveal",
+      "maps_to_event_type": "reveal",
+      "default_subtype": "identity_reveal",
+      "notes": "L5.0 identity reveal."
+    },
+    {
+      "event_type_candidate": "character_alias_change",
+      "maps_to_event_type": "disguise_or_impersonation",
+      "default_subtype": "use_alias",
+      "notes": "L5.0 alias change."
+    },
+    {
+      "event_type_candidate": "character_join_org",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "recruit",
+      "notes": "L5.0 join organization."
+    },
+    {
+      "event_type_candidate": "character_leave_org",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "expel",
+      "notes": "L5.0 leave organization."
+    },
+    {
+      "event_type_candidate": "character_betrayal",
+      "maps_to_event_type": "betrayal",
+      "default_subtype": "betray_ally",
+      "notes": "L5.0 betrayal."
+    },
+    {
+      "event_type_candidate": "character_unknown_action",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "notes": "Safe fallback."
+    },
+    {
+      "event_type_candidate": "location_arrival",
+      "maps_to_event_type": "movement",
+      "default_subtype": "arrive",
+      "notes": "L5.0 location arrival."
+    },
+    {
+      "event_type_candidate": "location_departure",
+      "maps_to_event_type": "movement",
+      "default_subtype": "leave",
+      "notes": "L5.0 location departure."
+    },
+    {
+      "event_type_candidate": "location_battle",
+      "maps_to_event_type": "battle",
+      "default_subtype": "group_battle",
+      "notes": "L5.0 location battle."
+    },
+    {
+      "event_type_candidate": "location_discovery",
+      "maps_to_event_type": "discovery",
+      "default_subtype": "find_location",
+      "notes": "L5.0 location discovery."
+    },
+    {
+      "event_type_candidate": "location_destroyed",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "annihilation",
+      "notes": "L5.0 location destruction."
+    },
+    {
+      "event_type_candidate": "location_sealed",
+      "maps_to_event_type": "capture",
+      "default_subtype": "seal_prison",
+      "notes": "L5.0 location sealed."
+    },
+    {
+      "event_type_candidate": "location_occupied",
+      "maps_to_event_type": "invasion",
+      "default_subtype": "occupy",
+      "notes": "L5.0 occupation."
+    },
+    {
+      "event_type_candidate": "location_escape",
+      "maps_to_event_type": "escape",
+      "default_subtype": "flee_scene",
+      "notes": "L5.0 location escape."
+    },
+    {
+      "event_type_candidate": "location_unknown_change",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "notes": "Safe fallback."
+    },
+    {
+      "event_type_candidate": "domain_attacked",
+      "maps_to_event_type": "attack",
+      "default_subtype": "power_attack",
+      "notes": "L5.0 domain attacked."
+    },
+    {
+      "event_type_candidate": "domain_invaded",
+      "maps_to_event_type": "invasion",
+      "default_subtype": "invade_domain",
+      "notes": "L5.0 domain invaded."
+    },
+    {
+      "event_type_candidate": "domain_polluted",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "contamination",
+      "notes": "L5.0 domain polluted."
+    },
+    {
+      "event_type_candidate": "domain_destroyed",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "annihilation",
+      "notes": "L5.0 domain destroyed."
+    },
+    {
+      "event_type_candidate": "domain_defended",
+      "maps_to_event_type": "defense",
+      "default_subtype": "protect",
+      "notes": "L5.0 domain defended."
+    },
+    {
+      "event_type_candidate": "domain_recovered",
+      "maps_to_event_type": "resurrection_or_revival",
+      "default_subtype": "restore_body",
+      "notes": "L5.0 domain recovered."
+    },
+    {
+      "event_type_candidate": "domain_sealed",
+      "maps_to_event_type": "ritual",
+      "default_subtype": "seal_ritual",
+      "notes": "L5.0 domain sealed."
+    },
+    {
+      "event_type_candidate": "domain_unknown_change",
+      "maps_to_event_type": "world_rule_change",
+      "default_subtype": "domain_rule",
+      "notes": "L5.0 domain fallback."
+    },
+    {
+      "event_type_candidate": "gray_world_intrusion",
+      "maps_to_event_type": "invasion",
+      "default_subtype": "gray_world_intrusion",
+      "notes": "L5.0 gray-world intrusion."
+    },
+    {
+      "event_type_candidate": "gray_tide_spread",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "gray_tide",
+      "notes": "L5.0 gray tide."
+    },
+    {
+      "event_type_candidate": "disaster_attack",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "disaster_attacks",
+      "notes": "L5.0 disaster attack."
+    },
+    {
+      "event_type_candidate": "disaster_manifestation",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "disaster_appears",
+      "notes": "L5.0 manifestation."
+    },
+    {
+      "event_type_candidate": "disaster_contamination",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "contamination",
+      "notes": "L5.0 contamination."
+    },
+    {
+      "event_type_candidate": "disaster_suppression",
+      "maps_to_event_type": "defense",
+      "default_subtype": "suppress",
+      "notes": "L5.0 suppression."
+    },
+    {
+      "event_type_candidate": "disaster_defeated",
+      "maps_to_event_type": "defense",
+      "default_subtype": "suppress",
+      "notes": "L5.0 disaster defeated."
+    },
+    {
+      "event_type_candidate": "gray_world_unknown_event",
+      "maps_to_event_type": "disaster_event",
+      "default_subtype": "gray_tide",
+      "notes": "L5.0 gray-world fallback."
+    },
+    {
+      "event_type_candidate": "power_awakening",
+      "maps_to_event_type": "power_upgrade",
+      "default_subtype": "awaken",
+      "notes": "L5.0 power awakening."
+    },
+    {
+      "event_type_candidate": "power_usage",
+      "maps_to_event_type": "ability_use",
+      "default_subtype": "activate_power",
+      "notes": "L5.0 power usage."
+    },
+    {
+      "event_type_candidate": "power_upgrade",
+      "maps_to_event_type": "power_upgrade",
+      "default_subtype": "upgrade",
+      "notes": "L5.0 power upgrade."
+    },
+    {
+      "event_type_candidate": "power_loss",
+      "maps_to_event_type": "power_upgrade",
+      "default_subtype": "lose_power",
+      "notes": "L5.0 power loss."
+    },
+    {
+      "event_type_candidate": "godway_stage_change",
+      "maps_to_event_type": "power_upgrade",
+      "default_subtype": "stage_change",
+      "notes": "L5.0 godway stage change."
+    },
+    {
+      "event_type_candidate": "domain_field_awakening",
+      "maps_to_event_type": "power_upgrade",
+      "default_subtype": "domain_awaken",
+      "notes": "L5.0 domain field awakening."
+    },
+    {
+      "event_type_candidate": "power_unknown_change",
+      "maps_to_event_type": "status_change",
+      "default_subtype": "status_unknown",
+      "notes": "Safe fallback."
+    },
+    {
+      "event_type_candidate": "organization_meeting",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "meeting",
+      "notes": "L5.0 organization meeting."
+    },
+    {
+      "event_type_candidate": "organization_operation",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "operation",
+      "notes": "L5.0 organization operation."
+    },
+    {
+      "event_type_candidate": "organization_conflict",
+      "maps_to_event_type": "conflict",
+      "default_subtype": "group_conflict",
+      "notes": "L5.0 organization conflict."
+    },
+    {
+      "event_type_candidate": "organization_exposure",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "exposure",
+      "notes": "L5.0 organization exposure."
+    },
+    {
+      "event_type_candidate": "organization_foundation",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "foundation",
+      "notes": "L5.0 organization foundation."
+    },
+    {
+      "event_type_candidate": "organization_collapse",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "collapse",
+      "notes": "L5.0 organization collapse."
+    },
+    {
+      "event_type_candidate": "organization_unknown_event",
+      "maps_to_event_type": "organization_action",
+      "default_subtype": "operation",
+      "notes": "L5.0 organization fallback."
+    },
+    {
+      "event_type_candidate": "relationship_alliance",
+      "maps_to_event_type": "alliance",
+      "default_subtype": "form_alliance",
+      "notes": "L5.0 relationship alliance."
+    },
+    {
+      "event_type_candidate": "relationship_conflict",
+      "maps_to_event_type": "relationship_change",
+      "default_subtype": "become_enemies",
+      "notes": "L5.0 relationship conflict."
+    },
+    {
+      "event_type_candidate": "relationship_betrayal",
+      "maps_to_event_type": "betrayal",
+      "default_subtype": "betray_ally",
+      "notes": "L5.0 relationship betrayal."
+    },
+    {
+      "event_type_candidate": "relationship_reconciliation",
+      "maps_to_event_type": "relationship_change",
+      "default_subtype": "reconcile",
+      "notes": "L5.0 relationship reconciliation."
+    },
+    {
+      "event_type_candidate": "relationship_unknown_change",
+      "maps_to_event_type": "relationship_change",
+      "default_subtype": "become_allies",
+      "notes": "L5.0 relationship fallback."
+    },
+    {
+      "event_type_candidate": "object_obtained",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "obtain",
+      "notes": "L5.0 object obtained."
+    },
+    {
+      "event_type_candidate": "object_lost",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "lose",
+      "notes": "L5.0 object lost."
+    },
+    {
+      "event_type_candidate": "object_destroyed",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "destroy_object",
+      "notes": "L5.0 object destroyed."
+    },
+    {
+      "event_type_candidate": "object_transferred",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "transfer",
+      "notes": "L5.0 object transferred."
+    },
+    {
+      "event_type_candidate": "object_unknown_change",
+      "maps_to_event_type": "object_transfer",
+      "default_subtype": "transfer",
+      "notes": "L5.0 object fallback."
+    }
+  ],
+  "l5_state_change_type_candidate_mapping": [
+    {
+      "state_change_type_candidate": "life_state",
+      "maps_to_state_change_type": "injury_change",
+      "notes": "Review decides injury, death, or revival."
+    },
+    {
+      "state_change_type_candidate": "identity_state",
+      "maps_to_state_change_type": "identity_change",
+      "notes": "L5.0 identity state."
+    },
+    {
+      "state_change_type_candidate": "location_state",
+      "maps_to_state_change_type": "location_change",
+      "notes": "L5.0 location state."
+    },
+    {
+      "state_change_type_candidate": "domain_state",
+      "maps_to_state_change_type": "world_rule_change",
+      "notes": "L5.0 domain state."
+    },
+    {
+      "state_change_type_candidate": "organization_state",
+      "maps_to_state_change_type": "organization_membership_change",
+      "notes": "L5.0 organization state."
+    },
+    {
+      "state_change_type_candidate": "power_state",
+      "maps_to_state_change_type": "power_change",
+      "notes": "L5.0 power state."
+    },
+    {
+      "state_change_type_candidate": "relationship_state",
+      "maps_to_state_change_type": "relationship_change",
+      "notes": "L5.0 relationship state."
+    },
+    {
+      "state_change_type_candidate": "unknown_state",
+      "maps_to_state_change_type": "status_change",
+      "notes": "Safe fallback."
+    }
+  ],
+  "confidence_rules": [
+    {
+      "rule_id": "conf_exact_trigger_with_evidence",
+      "description": "Boost when trigger text and evidence span are both present and back-cut valid.",
+      "conditions": {
+        "trigger_text_present": true,
+        "evidence_backcut_status": "ok"
+      },
+      "score_delta": 0.15,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_has_subject_candidate",
+      "description": "Boost when a subject or mover-like candidate exists.",
+      "conditions": {
+        "argument_roles_any": [
+          "subject",
+          "mover",
+          "agent",
+          "patient"
+        ]
+      },
+      "score_delta": 0.08,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_has_object_or_target_candidate",
+      "description": "Boost when an object, target, patient, or revealed entity candidate exists.",
+      "conditions": {
+        "argument_roles_any": [
+          "object",
+          "target",
+          "patient",
+          "revealed_entity"
+        ]
+      },
+      "score_delta": 0.05,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event"
+      ]
+    },
+    {
+      "rule_id": "conf_has_location_candidate",
+      "description": "Boost when a location or scene candidate exists.",
+      "conditions": {
+        "argument_roles_any": [
+          "current_location",
+          "origin_location",
+          "destination_location",
+          "scene"
+        ]
+      },
+      "score_delta": 0.05,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_has_state_change",
+      "description": "Boost when an event candidate has a linked state-change candidate.",
+      "conditions": {
+        "state_change_candidate_count_min": 1
+      },
+      "score_delta": 0.08,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event"
+      ]
+    },
+    {
+      "rule_id": "conf_has_valid_evidence_backcut",
+      "description": "Boost when evidence hash and offset back-cut validate.",
+      "conditions": {
+        "evidence_backcut_status": "ok"
+      },
+      "score_delta": 0.1,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_duplicate_penalty",
+      "description": "Penalty for likely duplicate trigger or evidence candidates.",
+      "conditions": {
+        "warning_flags_any": [
+          "duplicate_trigger_same_sentence",
+          "duplicate_event_same_evidence"
+        ]
+      },
+      "score_delta": -0.2,
+      "floor": 0.0,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_missing_evidence_penalty",
+      "description": "Penalty when evidence span is absent.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_evidence_span"
+        ]
+      },
+      "score_delta": -0.35,
+      "floor": 0.0,
+      "ceiling": 0.8,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_missing_argument_penalty",
+      "description": "Penalty when required argument candidates are absent.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_argument",
+          "missing_subject_candidate"
+        ]
+      },
+      "score_delta": -0.15,
+      "floor": 0.0,
+      "ceiling": 0.9,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_weak_trigger_penalty",
+      "description": "Penalty for weak or generic triggers.",
+      "conditions": {
+        "warning_flags_any": [
+          "weak_candidate"
+        ]
+      },
+      "score_delta": -0.2,
+      "floor": 0.0,
+      "ceiling": 0.7,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_invalid_scene_block_penalty",
+      "description": "Penalty when scene block reference is invalid.",
+      "conditions": {
+        "warning_flags_any": [
+          "invalid_scene_block_ref"
+        ]
+      },
+      "score_delta": -0.15,
+      "floor": 0.0,
+      "ceiling": 0.8,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_review_accept_boost",
+      "description": "Boost for future reviewed accept decision.",
+      "conditions": {
+        "review_decision": "accept"
+      },
+      "score_delta": 0.25,
+      "floor": 0.5,
+      "ceiling": 1.0,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_review_reject_floor",
+      "description": "Hard confidence suppression for future reviewed reject decision.",
+      "conditions": {
+        "review_decision": "reject"
+      },
+      "score_delta": -1.0,
+      "floor": 0.0,
+      "ceiling": 0.05,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    },
+    {
+      "rule_id": "conf_needs_context_penalty",
+      "description": "Penalty when a reviewer marks the candidate as needing more context.",
+      "conditions": {
+        "review_decision": "needs_context"
+      },
+      "score_delta": -0.25,
+      "floor": 0.0,
+      "ceiling": 0.65,
+      "applies_to": [
+        "event",
+        "state_change"
+      ]
+    }
+  ],
+  "importance_rules": [
+    {
+      "rule_id": "imp_death_or_revival",
+      "description": "Death and revival candidates are major or critical plot events.",
+      "conditions": {
+        "event_types_any": [
+          "death",
+          "resurrection_or_revival"
+        ]
+      },
+      "importance_level": "critical",
+      "applies_to_event_types": [
+        "death",
+        "resurrection_or_revival"
+      ]
+    },
+    {
+      "rule_id": "imp_power_upgrade",
+      "description": "Power upgrades are major by default.",
+      "conditions": {
+        "event_types_any": [
+          "power_upgrade"
+        ]
+      },
+      "importance_level": "major",
+      "applies_to_event_types": [
+        "power_upgrade"
+      ]
+    },
+    {
+      "rule_id": "imp_identity_change",
+      "description": "Identity changes are major by default.",
+      "conditions": {
+        "event_types_any": [
+          "identity_change"
+        ]
+      },
+      "importance_level": "major",
+      "applies_to_event_types": [
+        "identity_change",
+        "disguise_or_impersonation"
+      ]
+    },
+    {
+      "rule_id": "imp_world_rule_change",
+      "description": "World rule changes are critical.",
+      "conditions": {
+        "event_types_any": [
+          "world_rule_change"
+        ]
+      },
+      "importance_level": "critical",
+      "applies_to_event_types": [
+        "world_rule_change"
+      ]
+    },
+    {
+      "rule_id": "imp_disaster_event",
+      "description": "Disaster events are major by default.",
+      "conditions": {
+        "event_types_any": [
+          "disaster_event",
+          "invasion"
+        ]
+      },
+      "importance_level": "major",
+      "applies_to_event_types": [
+        "disaster_event",
+        "invasion"
+      ]
+    },
+    {
+      "rule_id": "imp_major_battle",
+      "description": "Battles are major by default.",
+      "conditions": {
+        "event_types_any": [
+          "battle"
+        ]
+      },
+      "importance_level": "major",
+      "applies_to_event_types": [
+        "battle"
+      ]
+    },
+    {
+      "rule_id": "imp_relationship_change",
+      "description": "Relationship changes are normal unless supported by major context.",
+      "conditions": {
+        "event_types_any": [
+          "relationship_change",
+          "alliance",
+          "betrayal"
+        ]
+      },
+      "importance_level": "normal",
+      "applies_to_event_types": [
+        "relationship_change",
+        "alliance",
+        "betrayal"
+      ]
+    },
+    {
+      "rule_id": "imp_organization_membership_change",
+      "description": "Organization membership changes are normal by default.",
+      "conditions": {
+        "state_change_types_any": [
+          "organization_membership_change"
+        ]
+      },
+      "importance_level": "normal",
+      "applies_to_event_types": [
+        "organization_action"
+      ]
+    },
+    {
+      "rule_id": "imp_reveal_core_information",
+      "description": "Core information reveal candidates are major when reviewed.",
+      "conditions": {
+        "event_types_any": [
+          "reveal",
+          "knowledge_change"
+        ]
+      },
+      "importance_level": "major",
+      "applies_to_event_types": [
+        "reveal",
+        "knowledge_change"
+      ]
+    },
+    {
+      "rule_id": "imp_scene_transition_minor",
+      "description": "Plain scene transitions are minor.",
+      "conditions": {
+        "event_types_any": [
+          "scene_transition"
+        ]
+      },
+      "importance_level": "minor",
+      "applies_to_event_types": [
+        "scene_transition"
+      ]
+    },
+    {
+      "rule_id": "imp_dialogue_normal",
+      "description": "Dialogue is normal unless another rule upgrades it.",
+      "conditions": {
+        "event_types_any": [
+          "dialogue"
+        ]
+      },
+      "importance_level": "normal",
+      "applies_to_event_types": [
+        "dialogue"
+      ]
+    },
+    {
+      "rule_id": "imp_internal_state_minor",
+      "description": "Internal state changes are minor by default.",
+      "conditions": {
+        "event_types_any": [
+          "internal_state"
+        ]
+      },
+      "importance_level": "minor",
+      "applies_to_event_types": [
+        "internal_state"
+      ]
+    }
+  ],
+  "merge_key_rules": [
+    {
+      "rule_id": "merge_same_sentence_same_trigger",
+      "description": "Future grouping may place same sentence and trigger candidates in one review group.",
+      "candidate_key_fields": [
+        "chapter_id",
+        "version_id",
+        "sentence_id",
+        "trigger_text",
+        "trigger_start_offset",
+        "trigger_end_offset"
+      ],
+      "allowed_when_review_decision": [
+        "merge"
+      ],
+      "merge_strategy": "future_deterministic_candidate_grouping",
+      "notes": "Does not auto-confirm or delete candidates."
+    },
+    {
+      "rule_id": "merge_same_evidence_hash_same_trigger",
+      "description": "Future grouping may place same evidence hash and trigger candidates in one review group.",
+      "candidate_key_fields": [
+        "evidence_backcut_hash",
+        "trigger_text",
+        "trigger_rule_id"
+      ],
+      "allowed_when_review_decision": [
+        "merge"
+      ],
+      "merge_strategy": "future_deterministic_candidate_grouping",
+      "notes": "Group only; no automatic event fact."
+    },
+    {
+      "rule_id": "merge_same_scene_same_subject_same_type",
+      "description": "Future grouping may group same scene, subject, and canonical type candidates for review.",
+      "candidate_key_fields": [
+        "scene_block_id",
+        "subject_candidates_json",
+        "event_type_candidate"
+      ],
+      "allowed_when_review_decision": [
+        "merge"
+      ],
+      "merge_strategy": "manual_review_required",
+      "notes": "Manual review required before any merge outcome."
+    },
+    {
+      "rule_id": "merge_state_change_into_event",
+      "description": "Future state-change candidates may be linked to a reviewed event record.",
+      "candidate_key_fields": [
+        "linked_event_candidate_id",
+        "state_change_type_candidate",
+        "changed_entity_candidates_json"
+      ],
+      "allowed_when_review_decision": [
+        "accept",
+        "merge"
+      ],
+      "merge_strategy": "manual_review_required",
+      "notes": "Defines linking behavior only; source rows remain unchanged."
+    },
+    {
+      "rule_id": "merge_forbidden_without_review",
+      "description": "No merge is allowed without review or an explicit future deterministic acceptance rule.",
+      "candidate_key_fields": [],
+      "allowed_when_review_decision": [],
+      "merge_strategy": "forbidden",
+      "notes": "Prevents automatic confirmation or silent de-duplication."
+    }
+  ],
+  "reject_rules": [
+    {
+      "rule_id": "reject_missing_evidence",
+      "description": "Future candidate should be unusable for normalization if no evidence exists.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_evidence_span"
+        ]
+      },
+      "reject_level": "hard",
+      "notes": "Does not delete data or mutate source tables."
+    },
+    {
+      "rule_id": "reject_invalid_evidence_offset",
+      "description": "Future candidate should be rejected if evidence offsets are invalid.",
+      "conditions": {
+        "evidence_backcut_status": "offset_invalid"
+      },
+      "reject_level": "hard",
+      "notes": "Keep row for audit."
+    },
+    {
+      "rule_id": "reject_hash_mismatch",
+      "description": "Future candidate should be rejected if evidence hash does not match back-cut text.",
+      "conditions": {
+        "warning_flags_any": [
+          "hash_mismatch",
+          "evidence_backcut_not_ok"
+        ]
+      },
+      "reject_level": "hard",
+      "notes": "No source mutation."
+    },
+    {
+      "rule_id": "reject_no_trigger_text",
+      "description": "Future candidate should be rejected if trigger text is empty.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_trigger_text"
+        ]
+      },
+      "reject_level": "hard",
+      "notes": "No source mutation."
+    },
+    {
+      "rule_id": "reject_source_chapter_missing",
+      "description": "Future candidate should be rejected if source chapter anchor is missing.",
+      "conditions": {
+        "source_chapter_present": false
+      },
+      "reject_level": "hard",
+      "notes": "No source mutation."
+    },
+    {
+      "rule_id": "reject_review_rejected",
+      "description": "Human rejected candidates should not normalize into final facts.",
+      "conditions": {
+        "review_decision": "reject"
+      },
+      "reject_level": "hard",
+      "notes": "Review outcome is preserved."
+    },
+    {
+      "rule_id": "reject_non_event_description",
+      "description": "Descriptions that are not actual event/state candidates should be excluded in future normalization.",
+      "conditions": {
+        "review_decision": "reject",
+        "review_note_contains": "non_event"
+      },
+      "reject_level": "manual_only",
+      "notes": "Manual-only because semantic judgment is required."
+    },
+    {
+      "rule_id": "reject_duplicate_noise",
+      "description": "Duplicate noise may be marked unusable after review.",
+      "conditions": {
+        "warning_flags_any": [
+          "duplicate_trigger_same_sentence",
+          "duplicate_event_same_evidence"
+        ]
+      },
+      "reject_level": "soft",
+      "notes": "Soft reject only; duplicate grouping must not delete rows."
+    }
+  ],
+  "downgrade_rules": [
+    {
+      "rule_id": "downgrade_missing_subject",
+      "description": "Downgrade when subject-like argument is missing.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_subject_candidate"
+        ]
+      },
+      "downgrade_to": "needs_context",
+      "notes": "Candidate remains auditable."
+    },
+    {
+      "rule_id": "downgrade_missing_object_when_required",
+      "description": "Downgrade when object or target is required but missing.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_object_candidate"
+        ]
+      },
+      "downgrade_to": "needs_context",
+      "notes": "Applies to attack, transfer, reveal, and relationship candidates."
+    },
+    {
+      "rule_id": "downgrade_missing_location_for_movement",
+      "description": "Downgrade movement candidates missing location evidence.",
+      "conditions": {
+        "event_type": "movement",
+        "warning_flags_any": [
+          "missing_location_candidate"
+        ]
+      },
+      "downgrade_to": "weak_candidate",
+      "notes": "Movement can still be valid with only mover evidence after review."
+    },
+    {
+      "rule_id": "downgrade_missing_scene_block",
+      "description": "Downgrade when scene block is unavailable or missing.",
+      "conditions": {
+        "warning_flags_any": [
+          "missing_scene_block",
+          "optional_scene_block_source_missing"
+        ]
+      },
+      "downgrade_to": "candidate",
+      "notes": "Scene source is optional in current L5.0/L5.1."
+    },
+    {
+      "rule_id": "downgrade_multiple_evidence_spans",
+      "description": "Downgrade candidates with multiple evidence spans pending review.",
+      "conditions": {
+        "warning_flags_any": [
+          "multiple_evidence_spans"
+        ]
+      },
+      "downgrade_to": "uncertain",
+      "notes": "May indicate split event."
+    },
+    {
+      "rule_id": "downgrade_optional_source_missing",
+      "description": "Downgrade only mildly when optional location or scene sources are missing.",
+      "conditions": {
+        "warning_flags_any": [
+          "optional_location_source_missing",
+          "optional_scene_block_source_missing"
+        ]
+      },
+      "downgrade_to": "candidate",
+      "notes": "Optional missing sources should not fail default verification."
+    },
+    {
+      "rule_id": "downgrade_low_confidence_trigger",
+      "description": "Downgrade weak trigger candidates.",
+      "conditions": {
+        "warning_flags_any": [
+          "weak_candidate"
+        ]
+      },
+      "downgrade_to": "weak_candidate",
+      "notes": "Keeps candidate for human inspection."
+    }
+  ],
+  "warning_flag_catalog": [
+    {
+      "flag": "missing_evidence_span",
+      "severity": "error",
+      "description": "Candidate has no evidence span.",
+      "recommended_action": "Reject or request regeneration with evidence."
+    },
+    {
+      "flag": "multiple_evidence_spans",
+      "severity": "warning",
+      "description": "Candidate has multiple evidence spans.",
+      "recommended_action": "Review whether split or merge is needed."
+    },
+    {
+      "flag": "missing_trigger_text",
+      "severity": "error",
+      "description": "Trigger text is missing.",
+      "recommended_action": "Reject unless source can be audited."
+    },
+    {
+      "flag": "missing_argument",
+      "severity": "warning",
+      "description": "Required argument candidate is missing.",
+      "recommended_action": "Mark needs_context or review evidence."
+    },
+    {
+      "flag": "missing_subject_candidate",
+      "severity": "warning",
+      "description": "Subject-like candidate is missing.",
+      "recommended_action": "Review surrounding evidence."
+    },
+    {
+      "flag": "missing_object_candidate",
+      "severity": "warning",
+      "description": "Object or target candidate is missing.",
+      "recommended_action": "Review if object is required for this type."
+    },
+    {
+      "flag": "missing_location_candidate",
+      "severity": "warning",
+      "description": "Location candidate is missing.",
+      "recommended_action": "Review movement or scene context."
+    },
+    {
+      "flag": "missing_scene_block",
+      "severity": "info",
+      "description": "Scene block reference is missing.",
+      "recommended_action": "Keep candidate; scene source may be optional."
+    },
+    {
+      "flag": "invalid_scene_block_ref",
+      "severity": "suspect",
+      "description": "Scene block reference is invalid.",
+      "recommended_action": "Check scene source compatibility."
+    },
+    {
+      "flag": "evidence_backcut_not_ok",
+      "severity": "error",
+      "description": "Evidence back-cut status is not ok.",
+      "recommended_action": "Reject or repair source coordinates in a later layer."
+    },
+    {
+      "flag": "hash_mismatch",
+      "severity": "error",
+      "description": "Evidence hash does not match.",
+      "recommended_action": "Reject for future normalization."
+    },
+    {
+      "flag": "weak_candidate",
+      "severity": "warning",
+      "description": "Candidate trigger is weak or generic.",
+      "recommended_action": "Downgrade unless review accepts it."
+    },
+    {
+      "flag": "duplicate_trigger_same_sentence",
+      "severity": "warning",
+      "description": "Duplicate trigger appears in the same sentence.",
+      "recommended_action": "Group for review; do not auto-merge."
+    },
+    {
+      "flag": "duplicate_event_same_evidence",
+      "severity": "warning",
+      "description": "Duplicate event candidate appears to share evidence.",
+      "recommended_action": "Group for review; do not auto-merge."
+    },
+    {
+      "flag": "state_change_without_event",
+      "severity": "suspect",
+      "description": "State-change candidate lacks a linked event.",
+      "recommended_action": "Review linkage."
+    },
+    {
+      "flag": "event_without_state_change",
+      "severity": "info",
+      "description": "Event candidate has no linked state-change candidate.",
+      "recommended_action": "Acceptable for many event types."
+    },
+    {
+      "flag": "optional_location_source_missing",
+      "severity": "info",
+      "description": "Optional location source is missing.",
+      "recommended_action": "Keep candidate and note coverage gap."
+    },
+    {
+      "flag": "optional_scene_block_source_missing",
+      "severity": "info",
+      "description": "Optional scene block source is missing.",
+      "recommended_action": "Keep candidate and note coverage gap."
+    },
+    {
+      "flag": "review_rejected",
+      "severity": "error",
+      "description": "Human review rejected the candidate.",
+      "recommended_action": "Do not normalize into final facts."
+    },
+    {
+      "flag": "review_needs_context",
+      "severity": "warning",
+      "description": "Human review requires more context.",
+      "recommended_action": "Keep candidate out of confirmed outputs."
+    },
+    {
+      "flag": "review_uncertain",
+      "severity": "warning",
+      "description": "Human review marked candidate uncertain.",
+      "recommended_action": "Keep candidate out of confirmed outputs unless later accepted."
+    },
+    {
+      "flag": "normalization_not_allowed",
+      "severity": "error",
+      "description": "Candidate violates L5.2 guardrails for normalization.",
+      "recommended_action": "Do not normalize."
+    },
+    {
+      "flag": "manual_review_required",
+      "severity": "warning",
+      "description": "Manual review is required before future normalization or grouping.",
+      "recommended_action": "Route to review queue."
+    }
+  ],
+  "normalization_guardrails": [
+    {
+      "guardrail_id": "candidate_is_not_truth",
+      "description": "Candidate rows must not be treated as confirmed story facts."
+    },
+    {
+      "guardrail_id": "manual_review_before_confirmed_event",
+      "description": "Future confirmed event generation requires review_decision or equivalent deterministic acceptance criteria."
+    },
+    {
+      "guardrail_id": "no_auto_entity_resolution",
+      "description": "Character/location/organization normalization must not be invented from text alone."
+    },
+    {
+      "guardrail_id": "evidence_required",
+      "description": "A future normalized event must retain evidence coordinates and evidence hash."
+    },
+    {
+      "guardrail_id": "source_table_read_only",
+      "description": "L1/L2/L3/L4/L5.0 source tables must remain read-only."
+    }
+  ],
+  "future_tables": [
+    {
+      "table_name": "l5_normalized_event",
+      "status": "future_not_created_in_l5_2",
+      "description": "Future table for reviewed and normalized event records."
+    },
+    {
+      "table_name": "l5_normalized_state_change",
+      "status": "future_not_created_in_l5_2",
+      "description": "Future table for reviewed and normalized state change records."
+    },
+    {
+      "table_name": "l5_event_merge_group",
+      "status": "future_not_created_in_l5_2",
+      "description": "Future table for deterministic candidate grouping or human-reviewed merge groups."
+    }
+  ],
+  "seed_checksum": "5a7be291ac1c9f9de5c2ea5fad5892f427898692b86cbc81ef80f0b96c0770d4"
+}

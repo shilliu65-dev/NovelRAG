@@ -1,0 +1,191 @@
+{
+  "seed_version": "l3.6_disaster_ecology_seed_v1.0",
+  "scope": "gray realm, seven disasters, habitats, invasion events, pollution and disaster ecology evidence index",
+  "strict_no_llm": true,
+  "strict_no_embedding": true,
+  "strict_no_chroma": true,
+  "strict_read_only_sources": [
+    "v_current_chapters",
+    "v_l2_current_paragraphs",
+    "v_l2_current_sentences"
+  ],
+  "zone_defs": [
+    {
+      "zone_id": "dz_gray_realm",
+      "zone_name": "灰界",
+      "zone_type": "gray_realm",
+      "aliases": ["灰界"],
+      "positive_patterns": ["灰界"],
+      "negative_patterns": ["灰色", "灰衣", "灰尘", "灰白"],
+      "description": "灰界是特殊异常区域，是七灾栖息和侵略九大界域的来源区域。"
+    },
+    {
+      "zone_id": "dz_gray_tide",
+      "zone_name": "灰潮",
+      "zone_type": "gray_tide",
+      "aliases": ["灰潮", "灰潮区域", "灰潮边缘", "灰潮覆盖区"],
+      "positive_patterns": ["灰潮", "灰潮区域", "灰潮边缘", "灰潮覆盖"],
+      "negative_patterns": [],
+      "description": "灰潮是灰界侵蚀、扩张、覆盖其他空间的重要表现。"
+    },
+    {
+      "zone_id": "dz_polluted_space",
+      "zone_name": "污染空间",
+      "zone_type": "polluted_space",
+      "aliases": ["污染空间", "污染区", "污染区域", "被污染的空间"],
+      "positive_patterns": ["污染空间", "污染区", "污染区域", "被污染的空间"],
+      "negative_patterns": [],
+      "description": "被灾厄或灰界规则污染的空间。"
+    },
+    {
+      "zone_id": "dz_disaster_ecology",
+      "zone_name": "灾厄生态",
+      "zone_type": "disaster_ecology",
+      "aliases": ["灾厄生态", "灾厄生态区", "灾厄群落"],
+      "positive_patterns": ["灾厄生态", "灾厄生态区", "灾厄群落"],
+      "negative_patterns": [],
+      "description": "灾厄生命、污染规则和异常环境构成的生态系统。"
+    }
+  ],
+  "disaster_defs": [
+    {
+      "disaster_id": "disaster_chao",
+      "disaster_name": "嘲灾",
+      "disaster_type": "chao_disaster",
+      "aliases": ["嘲灾"],
+      "positive_patterns": ["嘲灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": true,
+      "description": "七灾之一。第一版只做 seed 占位和候选证据索引。"
+    },
+    {
+      "disaster_id": "disaster_ji",
+      "disaster_name": "忌灾",
+      "disaster_type": "ji_disaster",
+      "aliases": ["忌灾"],
+      "positive_patterns": ["忌灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。"
+    },
+    {
+      "disaster_id": "disaster_xi",
+      "disaster_name": "息灾",
+      "disaster_type": "xi_disaster",
+      "aliases": ["息灾"],
+      "positive_patterns": ["息灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。"
+    },
+    {
+      "disaster_id": "disaster_zhuo",
+      "disaster_name": "浊灾",
+      "disaster_type": "zhuo_disaster",
+      "aliases": ["浊灾"],
+      "positive_patterns": ["浊灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。"
+    },
+    {
+      "disaster_id": "disaster_wang",
+      "disaster_name": "妄灾",
+      "disaster_type": "wang_disaster",
+      "aliases": ["妄灾"],
+      "positive_patterns": ["妄灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。"
+    },
+    {
+      "disaster_id": "disaster_si",
+      "disaster_name": "思灾",
+      "disaster_type": "si_disaster",
+      "aliases": ["思灾"],
+      "positive_patterns": ["思灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。"
+    },
+    {
+      "disaster_id": "disaster_ji_mie",
+      "disaster_name": "寂灾",
+      "disaster_type": "ji_mie_disaster",
+      "aliases": ["寂灾"],
+      "positive_patterns": ["寂灾"],
+      "negative_patterns": [],
+      "origin_zone_id": "dz_gray_realm",
+      "is_special_case": false,
+      "description": "七灾之一。注意不要与忌灾混淆。"
+    }
+  ],
+  "habitat_defs": [
+    {"habitat_id": "habitat_chao_unknown", "disaster_id": "disaster_chao", "parent_zone_id": "dz_gray_realm", "habitat_name": "嘲灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_ji_unknown", "disaster_id": "disaster_ji", "parent_zone_id": "dz_gray_realm", "habitat_name": "忌灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_xi_unknown", "disaster_id": "disaster_xi", "parent_zone_id": "dz_gray_realm", "habitat_name": "息灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_zhuo_unknown", "disaster_id": "disaster_zhuo", "parent_zone_id": "dz_gray_realm", "habitat_name": "浊灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_wang_unknown", "disaster_id": "disaster_wang", "parent_zone_id": "dz_gray_realm", "habitat_name": "妄灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_si_unknown", "disaster_id": "disaster_si", "parent_zone_id": "dz_gray_realm", "habitat_name": "思灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"},
+    {"habitat_id": "habitat_ji_mie_unknown", "disaster_id": "disaster_ji_mie", "parent_zone_id": "dz_gray_realm", "habitat_name": "寂灾未知栖息区", "habitat_type": "unknown", "aliases": [], "status": "unknown", "description": "第一版占位 habitat，不脑补具体名称。"}
+  ],
+  "zone_patterns": {
+    "gray_realm": ["灰界"],
+    "gray_tide": ["灰潮", "灰潮区域", "灰潮边缘", "灰潮覆盖"],
+    "polluted_space": ["污染空间", "污染区", "污染区域", "被污染的空间"],
+    "disaster_ecology": ["灾厄生态", "灾厄生态区", "灾厄群落"]
+  },
+  "disaster_patterns": {
+    "disaster_chao": ["嘲灾"],
+    "disaster_ji": ["忌灾"],
+    "disaster_xi": ["息灾"],
+    "disaster_zhuo": ["浊灾"],
+    "disaster_wang": ["妄灾"],
+    "disaster_si": ["思灾"],
+    "disaster_ji_mie": ["寂灾"]
+  },
+  "habitat_patterns": {
+    "habitat": ["栖息区", "栖息地", "领地", "巢穴", "灾厄生态区", "灾厄领域", "封锁区"]
+  },
+  "invasion_patterns": {
+    "erosion": ["侵蚀", "蚕食"],
+    "invasion": ["侵略", "入侵"],
+    "attack": ["攻击"],
+    "expansion": ["扩张", "蔓延"],
+    "coverage": ["覆盖", "笼罩"],
+    "pollution": ["污染"],
+    "assimilation": ["同化"],
+    "boundary_advance": ["边界推进"],
+    "boundary_retreat": ["边界后退"],
+    "occupation": ["占据", "占领"],
+    "containment": ["封锁", "压制"],
+    "purification": ["净化"],
+    "collapse": ["崩塌", "崩溃"]
+  },
+  "affected_location_triggers": [
+    "界域",
+    "天枢界域",
+    "极光界域",
+    "红尘界域",
+    "城市",
+    "城",
+    "地区",
+    "空间",
+    "区域",
+    "建筑"
+  ],
+  "global_negative_patterns": [
+    "灰色",
+    "灰衣",
+    "灰尘",
+    "灰白",
+    "普通建筑",
+    "普通地点"
+  ]
+}
