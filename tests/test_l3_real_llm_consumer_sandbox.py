@@ -124,12 +124,38 @@ class L3RealLlmConsumerSandboxTests(unittest.TestCase):
             read_only=True,
             mock_invalid_query_ids={"q001"},
         )
-        self.assertTrue(result.ok, result.errors)
+        self.assertFalse(result.ok)
         manifest = json.loads((root / "outputs" / "l3_real_llm_consumer_sandbox_sample_manifest.json").read_text(encoding="utf-8"))
         responses = json.loads((root / "outputs" / "l3_real_llm_consumer_sandbox_sample.json").read_text(encoding="utf-8"))["responses"]
         q001 = next(item for item in responses if item["query_id"] == "q001")
         self.assertEqual(q001["response_status"], "invalid")
         self.assertGreaterEqual(manifest["json_parse_error_count"], 1)
+
+    def test_all_invalid_responses_fail_manifest_status(self) -> None:
+        from scripts import l3_real_llm_consumer_sandbox as sandbox
+
+        root, _payload = build_prompt_context_project()
+        result = sandbox.run_sandbox(
+            root,
+            mock_llm=True,
+            read_only=True,
+            mock_invalid_query_ids={"q001", "q002", "q003"},
+        )
+
+        self.assertFalse(result.ok)
+        manifest = json.loads((root / "outputs" / "l3_real_llm_consumer_sandbox_sample_manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["status"], "FAIL")
+        self.assertEqual(manifest["invalid_response_count"], manifest["response_count"])
+
+    def test_real_mode_without_allow_env_is_blocked_before_request(self) -> None:
+        from scripts import l3_real_llm_consumer_sandbox as sandbox
+
+        root, _payload = build_prompt_context_project()
+        result = sandbox.run_sandbox(root, read_only=True, real_llm=True)
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.request_sent_count, 0)
 
     def test_manifest_complete_and_forbidden_final_table_check(self) -> None:
         root, payload = build_real_llm_sandbox_project()
@@ -152,6 +178,17 @@ class L3RealLlmConsumerSandboxTests(unittest.TestCase):
             "json_parse_error_count",
             "json_extraction_warning_count",
             "raw_response_wrapped_count",
+            "request_attempt_count",
+            "request_sent_count",
+            "api_success_count",
+            "api_error_count",
+            "exception_count",
+            "skipped_by_guard_count",
+            "empty_raw_response_count",
+            "valid_response_count",
+            "usage_total_input_tokens",
+            "usage_total_output_tokens",
+            "usage_total_tokens",
             "source_table_mutation_count",
             "forbidden_final_table_count",
             "chroma_accessed",

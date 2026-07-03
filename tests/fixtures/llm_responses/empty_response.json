@@ -1,0 +1,17 @@
+{
+  "response": {
+    "choices": [
+      {
+        "message": {
+          "content": ""
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 5,
+      "completion_tokens": 0,
+      "total_tokens": 5
+    }
+  }
+}

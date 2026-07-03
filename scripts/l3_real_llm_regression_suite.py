@@ -42,6 +42,11 @@ class RegressionSuiteResult:
     sandbox_status: str = ""
     verifier_status: str = ""
     response_count: int = 0
+    request_sent_count: int = 0
+    api_success_count: int = 0
+    valid_response_count: int = 0
+    invalid_response_count: int = 0
+    empty_raw_response_count: int = 0
     json_parse_error_count: int = 0
     unsupported_claim_count: int = 0
     out_of_pack_fact_ref_count: int = 0
@@ -56,8 +61,10 @@ class RegressionSuiteResult:
     source_mutation: bool = False
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    case_results: list[dict[str, Any]] = field(default_factory=list)
     checked_files: list[str] = field(default_factory=list)
     generated_files: list[str] = field(default_factory=list)
+    reason: str = ""
 
 
 def now_iso() -> str:
@@ -113,17 +120,54 @@ def append_error(result: RegressionSuiteResult, message: str) -> None:
         result.errors.append(message)
 
 
+def evaluate_raw_response_case(name: str, raw_content: str) -> dict[str, Any]:
+    parsed, parse_failed, extracted, warnings = sandbox.parse_json_response(raw_content)
+    empty_raw = not raw_content.strip()
+    ok_value = isinstance(parsed, dict) and parsed.get("ok") is True
+    status = "PASS" if (not empty_raw and not parse_failed and ok_value) else "FAIL"
+    return {
+        "name": name,
+        "status": status,
+        "raw_content_empty": empty_raw,
+        "json_parse_ok": not parse_failed,
+        "parsed_json": parsed,
+        "extracted_json_text": extracted,
+        "warnings": warnings,
+    }
+
+
+def fixture_content(project_dir: Path, fixture_name: str) -> str:
+    del project_dir
+    fixture_path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "llm_responses" / fixture_name
+    payload = load_json_file(fixture_path)
+    if "response" not in payload:
+        return ""
+    content, _path_used, _finish_reason, _usage = sandbox.content_from_response(payload["response"])
+    return content
+
+
+def run_fake_and_fixture_cases(project_dir: Path) -> list[dict[str, Any]]:
+    return [
+        evaluate_raw_response_case("fake_valid_json", '{"ok": true, "source": "fake"}'),
+        evaluate_raw_response_case("fake_markdown_wrapped_json", '```json\n{"ok": true, "source": "fake"}\n```'),
+        evaluate_raw_response_case("fake_empty_response", ""),
+        evaluate_raw_response_case("fake_invalid_json", "not json"),
+        evaluate_raw_response_case("fixture_valid_json", fixture_content(project_dir, "valid_json_response.json")),
+        evaluate_raw_response_case("fixture_empty_response", fixture_content(project_dir, "empty_response.json")),
+        evaluate_raw_response_case("fixture_invalid_json", fixture_content(project_dir, "invalid_json_response.json")),
+    ]
+
+
 def require_real_llm_gate(result: RegressionSuiteResult) -> bool:
     if os.environ.get("NOVELRAG_ALLOW_REAL_LLM") != "1":
+        result.status = "BLOCKED"
+        result.reason = "real_llm_not_allowed"
         append_error(result, "real LLM mode requires NOVELRAG_ALLOW_REAL_LLM=1")
         return False
-    missing = [
-        name
-        for name in ("NOVELRAG_LLM_BASE_URL", "NOVELRAG_LLM_API_KEY", "NOVELRAG_LLM_MODEL")
-        if not os.environ.get(name, "").strip()
-    ]
-    if missing:
-        append_error(result, "missing required real LLM environment variables: " + ", ".join(missing))
+    if not os.environ.get("NOVELRAG_LLM_API_KEY", "").strip():
+        result.status = "BLOCKED"
+        result.reason = "missing_api_key"
+        append_error(result, "missing required real LLM environment variable: NOVELRAG_LLM_API_KEY")
         return False
     return True
 
@@ -148,6 +192,7 @@ def run_real_llm_pipeline(
         temperature=temperature,
         max_output_tokens=max_output_tokens,
         mock_llm=False,
+        real_llm=True,
         read_only=read_only,
     )
     if not sandbox_result.ok:
@@ -195,6 +240,11 @@ def summarize_inputs(
     result.sandbox_status = "PASS" if safe_int(manifest, "error_count") == 0 else "FAIL"
     result.verifier_status = str(verify_payload.get("status", ""))
     result.response_count = safe_int(manifest, "response_count", len(sandbox_payload.get("responses", [])))
+    result.request_sent_count = safe_int(manifest, "request_sent_count")
+    result.api_success_count = safe_int(manifest, "api_success_count")
+    result.valid_response_count = safe_int(manifest, "valid_response_count", result.response_count - safe_int(manifest, "invalid_response_count"))
+    result.invalid_response_count = safe_int(manifest, "invalid_response_count")
+    result.empty_raw_response_count = safe_int(manifest, "empty_raw_response_count")
     result.json_parse_error_count = safe_int(manifest, "json_parse_error_count")
     result.unsupported_claim_count = max(safe_int(manifest, "unsupported_claim_count"), safe_int(verify_payload, "unsupported_claim_count"))
     result.out_of_pack_fact_ref_count = max(safe_int(manifest, "out_of_pack_fact_ref_count"), safe_int(verify_payload, "out_of_pack_fact_ref_count"))
@@ -217,10 +267,16 @@ def summarize_inputs(
 
 
 def apply_pass_conditions(result: RegressionSuiteResult) -> None:
+    if result.status == "BLOCKED":
+        result.ok = False
+        return
     checks = [
         (result.sandbox_status == "PASS", "sandbox_status must be PASS"),
         (result.verifier_status == "FULL PASS", "verifier_status must be FULL PASS"),
         (result.response_count > 0, "response_count must be > 0"),
+        (result.valid_response_count > 0, "valid_response_count must be > 0"),
+        (result.invalid_response_count == 0, "invalid_response_count must be 0"),
+        (result.empty_raw_response_count == 0, "empty_raw_response_count must be 0"),
         (result.json_parse_error_count == 0, "json_parse_error_count must be 0"),
         (result.out_of_pack_fact_ref_count == 0, "out_of_pack_fact_ref_count must be 0"),
         (result.out_of_pack_evidence_ref_count == 0, "out_of_pack_evidence_ref_count must be 0"),
@@ -236,6 +292,13 @@ def apply_pass_conditions(result: RegressionSuiteResult) -> None:
     for ok, message in checks:
         if not ok:
             append_error(result, message)
+    for case in result.case_results:
+        if case["name"] in {"fake_empty_response", "fake_invalid_json", "fixture_empty_response", "fixture_invalid_json"}:
+            if case["status"] != "FAIL":
+                append_error(result, f"{case['name']} must FAIL")
+        else:
+            if case["status"] != "PASS":
+                append_error(result, f"{case['name']} must PASS")
     result.status = "FAIL" if result.errors else "PASS"
     result.ok = not result.errors
 
@@ -266,6 +329,7 @@ def report_payload(result: RegressionSuiteResult) -> dict[str, Any]:
         "layer": "L3.14",
         "suite_name": "real_llm_regression_suite",
         "status": result.status,
+        "reason": result.reason,
         "mode": result.mode,
         "sandbox_output_prefix": result.sandbox_output_prefix,
         "input_prefix": result.input_prefix,
@@ -277,6 +341,11 @@ def report_payload(result: RegressionSuiteResult) -> dict[str, Any]:
         "sandbox_status": result.sandbox_status,
         "verifier_status": result.verifier_status,
         "response_count": result.response_count,
+        "request_sent_count": result.request_sent_count,
+        "api_success_count": result.api_success_count,
+        "valid_response_count": result.valid_response_count,
+        "invalid_response_count": result.invalid_response_count,
+        "empty_raw_response_count": result.empty_raw_response_count,
         "json_parse_error_count": result.json_parse_error_count,
         "unsupported_claim_count": result.unsupported_claim_count,
         "out_of_pack_fact_ref_count": result.out_of_pack_fact_ref_count,
@@ -291,6 +360,7 @@ def report_payload(result: RegressionSuiteResult) -> dict[str, Any]:
         "source_mutation": result.source_mutation,
         "errors": result.errors,
         "warnings": result.warnings,
+        "case_results": result.case_results,
         "checked_files": result.checked_files,
         "generated_files": result.generated_files,
     }
@@ -306,6 +376,7 @@ def render_markdown(result: RegressionSuiteResult) -> str:
             "## Status",
             "",
             f"- status: {result.status}",
+            f"- reason: {result.reason or 'none'}",
             "",
             "## Mode",
             "",
@@ -322,6 +393,11 @@ def render_markdown(result: RegressionSuiteResult) -> str:
             "",
             f"- sandbox_status: {result.sandbox_status}",
             f"- response_count: {result.response_count}",
+            f"- request_sent_count: {result.request_sent_count}",
+            f"- api_success_count: {result.api_success_count}",
+            f"- valid_response_count: {result.valid_response_count}",
+            f"- invalid_response_count: {result.invalid_response_count}",
+            f"- empty_raw_response_count: {result.empty_raw_response_count}",
             f"- json_parse_error_count: {result.json_parse_error_count}",
             "",
             "## Verifier summary",
@@ -389,12 +465,13 @@ def run_regression_suite(
     temperature: float = DEFAULT_TEMPERATURE,
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
     real_llm: bool = False,
-    read_only: bool = False,
+    read_only: bool = True,
     report_output: Path | str = DEFAULT_REPORT_OUTPUT,
     markdown_output: Path | str = DEFAULT_MARKDOWN_OUTPUT,
     manifest_output: Path | str = DEFAULT_MANIFEST_OUTPUT,
 ) -> RegressionSuiteResult:
     root = Path(project_dir).resolve()
+    sandbox.load_project_env(root)
     result = RegressionSuiteResult(
         ok=False,
         project_dir=root,
@@ -408,6 +485,7 @@ def run_regression_suite(
         read_only=read_only,
     )
     try:
+        result.case_results = run_fake_and_fixture_cases(root)
         if real_llm:
             if require_real_llm_gate(result):
                 run_real_llm_pipeline(
@@ -445,7 +523,7 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     parser.add_argument("--max-output-tokens", type=int, default=DEFAULT_MAX_OUTPUT_TOKENS)
     parser.add_argument("--real-llm", action="store_true")
-    parser.add_argument("--read-only", action="store_true")
+    parser.add_argument("--read-only", action="store_true", default=True)
     parser.add_argument("--report-output", type=Path, default=DEFAULT_REPORT_OUTPUT)
     parser.add_argument("--markdown-output", type=Path, default=DEFAULT_MARKDOWN_OUTPUT)
     parser.add_argument("--manifest-output", type=Path, default=DEFAULT_MANIFEST_OUTPUT)
@@ -464,7 +542,9 @@ def main() -> None:
         markdown_output=args.markdown_output,
         manifest_output=args.manifest_output,
     )
-    print("L3.14 real llm regression suite FULL PASS" if result.ok else "L3.14 real llm regression suite FAIL")
+    print("L3.14 real llm regression suite FULL PASS" if result.ok else f"L3.14 real llm regression suite {result.status}")
+    if result.reason:
+        print(f"reason={result.reason}")
     for error in result.errors:
         print(f"ERROR: {error}")
     raise SystemExit(0 if result.ok else 1)

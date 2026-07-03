@@ -1,0 +1,17 @@
+{
+  "response": {
+    "choices": [
+      {
+        "message": {
+          "content": "not json"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 5,
+      "completion_tokens": 2,
+      "total_tokens": 7
+    }
+  }
+}

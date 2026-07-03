@@ -1,0 +1,17 @@
+{
+  "response": {
+    "choices": [
+      {
+        "message": {
+          "content": "```json\n{\"ok\": true, \"source\": \"fixture\"}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 5,
+      "completion_tokens": 9,
+      "total_tokens": 14
+    }
+  }
+}

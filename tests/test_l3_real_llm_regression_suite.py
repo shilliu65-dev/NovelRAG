@@ -150,6 +150,33 @@ class L3RealLlmRegressionSuiteTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertGreater(result.json_parse_error_count, 0)
 
+    def test_invalid_response_count_equal_response_count_fails(self) -> None:
+        from scripts import l3_real_llm_regression_suite as suite
+
+        root = build_fake_regression_project(
+            sandbox_manifest_overrides={
+                "response_count": 10,
+                "invalid_response_count": 10,
+                "valid_response_count": 0,
+                "empty_raw_response_count": 0,
+            }
+        )
+        result = suite.run_regression_suite(root, read_only=True)
+        self.assertFalse(result.ok)
+        self.assertIn("invalid_response_count must be 0", "\n".join(result.errors))
+
+    def test_fixture_empty_and_invalid_responses_fail(self) -> None:
+        from scripts import l3_real_llm_regression_suite as suite
+
+        root = build_fake_regression_project()
+        result = suite.run_regression_suite(root, read_only=True)
+        cases = {case["name"]: case for case in result.case_results}
+        self.assertEqual(cases["fixture_empty_response"]["status"], "FAIL")
+        self.assertEqual(cases["fixture_invalid_json"]["status"], "FAIL")
+        self.assertEqual(cases["fixture_valid_json"]["status"], "PASS")
+        self.assertEqual(cases["fake_markdown_wrapped_json"]["status"], "PASS")
+        self.assertTrue(cases["fake_markdown_wrapped_json"]["warnings"])
+
     def test_api_key_leak_detection_fails_without_echoing_secret(self) -> None:
         from scripts import l3_real_llm_regression_suite as suite
 
@@ -170,7 +197,8 @@ class L3RealLlmRegressionSuiteTests(unittest.TestCase):
             with mock.patch("scripts.l3_real_llm_regression_suite.run_real_llm_pipeline") as pipeline:
                 result = suite.run_regression_suite(root, real_llm=True, read_only=True)
         self.assertFalse(result.ok)
-        self.assertIn("NOVELRAG_ALLOW_REAL_LLM=1", "\n".join(result.errors))
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.reason, "real_llm_not_allowed")
         pipeline.assert_not_called()
 
     def test_cli_replay_outputs_full_pass_line(self) -> None:

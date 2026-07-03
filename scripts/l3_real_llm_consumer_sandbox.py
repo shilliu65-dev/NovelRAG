@@ -40,13 +40,23 @@ class SandboxResult:
     provider: str
     temperature: float
     max_output_tokens: int
+    status: str = "FAIL"
+    reason: str = ""
+    request_attempt_count: int = 0
+    request_sent_count: int = 0
+    api_success_count: int = 0
+    api_error_count: int = 0
+    exception_count: int = 0
+    skipped_by_guard_count: int = 0
     context_pack_count: int = 0
     llm_call_count: int = 0
     response_count: int = 0
+    valid_response_count: int = 0
     ready_response_count: int = 0
     partial_response_count: int = 0
     insufficient_response_count: int = 0
     invalid_response_count: int = 0
+    empty_raw_response_count: int = 0
     unsupported_claim_count: int = 0
     out_of_pack_fact_ref_count: int = 0
     out_of_pack_evidence_ref_count: int = 0
@@ -60,10 +70,29 @@ class SandboxResult:
     chroma_accessed: bool = False
     embedding_called: bool = False
     sqlite_written: bool = False
+    usage_total_input_tokens: int = 0
+    usage_total_output_tokens: int = 0
+    usage_total_tokens: int = 0
     responses: list[dict[str, Any]] = field(default_factory=list)
     prompt_audit_rows: list[dict[str, Any]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+
+@dataclass
+class LlmCallResult:
+    request_was_attempted: bool = False
+    request_was_sent: bool = False
+    skipped_by_guard: bool = False
+    api_success: bool = False
+    api_error: str = ""
+    http_status: int | None = None
+    exception_type: str = ""
+    exception_message: str = ""
+    response_field_path_used: str = ""
+    raw_response: str = ""
+    finish_reason: str = ""
+    usage: dict[str, Any] | None = None
 
 
 def now_iso() -> str:
@@ -106,6 +135,22 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def load_project_env(project_dir: Path) -> None:
+    for name in (".env", ".env.local"):
+        path = project_dir / name
+        if not path.exists() or not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
 
 
 def reject_write_sql(sql: str) -> None:
@@ -234,7 +279,7 @@ def llm_payload(
     payload: dict[str, Any] = {
         "model": model,
         "temperature": temperature,
-        "max_tokens": max_output_tokens,
+        "max_completion_tokens": max_output_tokens,
         "messages": [
             {
                 "role": "system",
@@ -251,7 +296,7 @@ def llm_payload(
     return payload
 
 
-def post_openai_compatible(url: str, api_key: str, payload: dict[str, Any]) -> dict[str, Any]:
+def post_openai_compatible(url: str, api_key: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
@@ -262,7 +307,7 @@ def post_openai_compatible(url: str, api_key: str, payload: dict[str, Any]) -> d
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=120) as response:
-        return json.loads(response.read().decode("utf-8"))
+        return json.loads(response.read().decode("utf-8")), int(response.status)
 
 
 def response_format_unsupported(body: str) -> bool:
@@ -280,12 +325,41 @@ def response_format_unsupported(body: str) -> bool:
     )
 
 
-def call_openai_compatible(*, prompt: str, temperature: float, max_output_tokens: int) -> str:
+def content_from_response(raw: dict[str, Any]) -> tuple[str, str, str, dict[str, Any] | None]:
+    choices = raw.get("choices", [])
+    finish_reason = ""
+    usage = raw.get("usage") if isinstance(raw.get("usage"), dict) else None
+    if isinstance(choices, list) and choices:
+        first = choices[0] if isinstance(choices[0], dict) else {}
+        finish_reason = str(first.get("finish_reason", ""))
+        message = first.get("message") if isinstance(first.get("message"), dict) else {}
+        content = message.get("content") if isinstance(message, dict) else None
+        if content is not None:
+            if isinstance(content, list):
+                content = "".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
+            return str(content), "choices[0].message.content", finish_reason, usage
+        if first.get("text") is not None:
+            return str(first.get("text", "")), "choices[0].text", finish_reason, usage
+    if raw.get("output_text") is not None:
+        return str(raw.get("output_text", "")), "output_text", finish_reason, usage
+    if raw.get("content") is not None:
+        content = raw.get("content")
+        if isinstance(content, list):
+            content = "".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
+        return str(content), "response.content", finish_reason, usage
+    return "", "", finish_reason, usage
+
+
+def call_openai_compatible(*, prompt: str, temperature: float, max_output_tokens: int) -> LlmCallResult:
+    call_result = LlmCallResult(request_was_attempted=True)
     base_url = os.environ.get("NOVELRAG_LLM_BASE_URL", "").strip()
     api_key = os.environ.get("NOVELRAG_LLM_API_KEY", "").strip()
     model = os.environ.get("NOVELRAG_LLM_MODEL", "").strip()
     if not base_url or not api_key or not model:
-        raise RuntimeError("missing NOVELRAG_LLM_BASE_URL, NOVELRAG_LLM_API_KEY, or NOVELRAG_LLM_MODEL")
+        call_result.skipped_by_guard = True
+        call_result.exception_type = "missing_env_var"
+        call_result.exception_message = "missing NOVELRAG_LLM_BASE_URL, NOVELRAG_LLM_API_KEY, or NOVELRAG_LLM_MODEL"
+        return call_result
     url = base_url.rstrip("/") + "/chat/completions"
     payload = llm_payload(
         model=model,
@@ -295,7 +369,9 @@ def call_openai_compatible(*, prompt: str, temperature: float, max_output_tokens
         include_response_format=True,
     )
     try:
-        raw = post_openai_compatible(url, api_key, payload)
+        call_result.request_was_sent = True
+        raw, status = post_openai_compatible(url, api_key, payload)
+        call_result.http_status = status
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         if exc.code == 400 and response_format_unsupported(body):
@@ -306,17 +382,32 @@ def call_openai_compatible(*, prompt: str, temperature: float, max_output_tokens
                 max_output_tokens=max_output_tokens,
                 include_response_format=False,
             )
-            raw = post_openai_compatible(url, api_key, fallback_payload)
+            try:
+                raw, status = post_openai_compatible(url, api_key, fallback_payload)
+                call_result.http_status = status
+            except Exception as fallback_exc:  # noqa: BLE001
+                call_result.exception_type = type(fallback_exc).__name__
+                call_result.exception_message = str(fallback_exc)
+                call_result.api_error = call_result.exception_message
+                return call_result
         else:
-            raise RuntimeError(f"LLM HTTP error {exc.code}: {body}") from exc
-    choices = raw.get("choices", [])
-    if not choices:
-        raise RuntimeError("LLM returned no choices")
-    message = choices[0].get("message", {})
-    content = message.get("content", "")
-    if isinstance(content, list):
-        content = "".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
-    return str(content)
+            call_result.http_status = int(exc.code)
+            call_result.exception_type = "HTTPError"
+            call_result.exception_message = f"LLM HTTP error {exc.code}: {body}"
+            call_result.api_error = call_result.exception_message
+            return call_result
+    except Exception as exc:  # noqa: BLE001
+        call_result.exception_type = type(exc).__name__
+        call_result.exception_message = str(exc)
+        call_result.api_error = call_result.exception_message
+        return call_result
+    content, path_used, finish_reason, usage = content_from_response(raw)
+    call_result.raw_response = content
+    call_result.response_field_path_used = path_used
+    call_result.finish_reason = finish_reason
+    call_result.usage = usage
+    call_result.api_success = True
+    return call_result
 
 
 def is_json_object_text(text: str) -> bool:
@@ -393,6 +484,10 @@ def parse_json_response(raw_response: str) -> tuple[dict[str, Any] | None, bool,
 def invalid_response_row(
     pack: dict[str, Any],
     *,
+    request_id: str,
+    provider: str,
+    model: str,
+    call_result: LlmCallResult,
     prompt_hash: str,
     raw_response: str,
     extracted_json_text: str,
@@ -401,8 +496,20 @@ def invalid_response_row(
 ) -> dict[str, Any]:
     response_text = "Invalid response. evidence_refs: none"
     row = {
+        "request_id": request_id,
         "context_pack_id": str(pack.get("query_id", "")),
         "query_id": str(pack.get("query_id", "")),
+        "provider": provider,
+        "model": model,
+        "request_was_attempted": call_result.request_was_attempted,
+        "request_was_sent": call_result.request_was_sent,
+        "skipped_by_guard": call_result.skipped_by_guard,
+        "api_success": call_result.api_success,
+        "api_error": call_result.api_error,
+        "http_status": call_result.http_status,
+        "exception_type": call_result.exception_type,
+        "exception_message": call_result.exception_message,
+        "response_field_path_used": call_result.response_field_path_used,
         "response_status": "invalid",
         "response_text": response_text,
         "claim_units": [],
@@ -415,6 +522,8 @@ def invalid_response_row(
         "extracted_json_text": extracted_json_text,
         "json_extraction_warnings": json_extraction_warnings,
         "raw_response_was_wrapped": bool(json_extraction_warnings and extracted_json_text != raw_response),
+        "finish_reason": call_result.finish_reason,
+        "usage": call_result.usage or {},
         "prompt_hash": prompt_hash,
         "response_hash": sha256_text(raw_response),
         "token_budget_estimate": pack_builder.estimate_tokens(response_text),
@@ -426,6 +535,10 @@ def normalize_response(
     pack: dict[str, Any],
     parsed: dict[str, Any],
     *,
+    request_id: str,
+    provider: str,
+    model: str,
+    call_result: LlmCallResult,
     raw_response: str,
     extracted_json_text: str,
     json_extraction_warnings: list[str],
@@ -496,8 +609,20 @@ def normalize_response(
     ]
 
     row = {
+        "request_id": request_id,
         "context_pack_id": str(pack.get("query_id", "")),
         "query_id": str(pack.get("query_id", "")),
+        "provider": provider,
+        "model": model,
+        "request_was_attempted": call_result.request_was_attempted,
+        "request_was_sent": call_result.request_was_sent,
+        "skipped_by_guard": call_result.skipped_by_guard,
+        "api_success": call_result.api_success,
+        "api_error": call_result.api_error,
+        "http_status": call_result.http_status,
+        "exception_type": call_result.exception_type,
+        "exception_message": call_result.exception_message,
+        "response_field_path_used": call_result.response_field_path_used,
         "response_status": response_status,
         "response_text": str(parsed.get("response_text", "")),
         "claim_units": claim_units,
@@ -510,6 +635,8 @@ def normalize_response(
         "extracted_json_text": extracted_json_text,
         "json_extraction_warnings": json_extraction_warnings,
         "raw_response_was_wrapped": bool(json_extraction_warnings and extracted_json_text != raw_response),
+        "finish_reason": call_result.finish_reason,
+        "usage": call_result.usage or {},
         "prompt_hash": prompt_hash,
         "response_hash": sha256_text(raw_response),
         "token_budget_estimate": pack_builder.estimate_tokens(str(parsed.get("response_text", ""))),
@@ -543,7 +670,70 @@ def compute_counts(result: SandboxResult) -> None:
     result.partial_response_count = sum(1 for item in result.responses if item["response_status"] == "partial")
     result.insufficient_response_count = sum(1 for item in result.responses if item["response_status"] == "insufficient")
     result.invalid_response_count = sum(1 for item in result.responses if item["response_status"] == "invalid")
+    result.valid_response_count = result.response_count - result.invalid_response_count
+    result.empty_raw_response_count = sum(1 for item in result.responses if not str(item.get("raw_response", "")).strip())
+    result.request_attempt_count = sum(1 for item in result.responses if item.get("request_was_attempted"))
+    result.request_sent_count = sum(1 for item in result.responses if item.get("request_was_sent"))
+    result.api_success_count = sum(1 for item in result.responses if item.get("api_success"))
+    result.api_error_count = sum(1 for item in result.responses if item.get("api_error"))
+    result.exception_count = sum(1 for item in result.responses if item.get("exception_type"))
+    result.skipped_by_guard_count = sum(1 for item in result.responses if item.get("skipped_by_guard"))
+    result.usage_total_input_tokens = 0
+    result.usage_total_output_tokens = 0
+    result.usage_total_tokens = 0
+    for item in result.responses:
+        usage = item.get("usage") if isinstance(item.get("usage"), dict) else {}
+        result.usage_total_input_tokens += int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0)
+        result.usage_total_output_tokens += int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0)
+        result.usage_total_tokens += int(usage.get("total_tokens", 0) or 0)
     result.warning_count = len(result.warnings)
+
+
+def apply_result_status(result: SandboxResult) -> None:
+    if result.mock_llm:
+        if result.response_count > 0 and result.invalid_response_count == result.response_count:
+            result.status = "FAIL"
+            result.reason = "all_responses_invalid"
+        elif result.response_count > 0 and result.empty_raw_response_count == result.response_count:
+            result.status = "FAIL"
+            result.reason = "empty_raw_response"
+        elif result.valid_response_count > 0 and result.json_parse_error_count == 0 and not result.errors:
+            result.status = "PASS"
+            result.reason = ""
+        else:
+            result.status = "FAIL"
+            result.reason = result.reason or "mock_validation_failed"
+    else:
+        if result.request_attempt_count == 0:
+            result.status = "BLOCKED"
+            result.reason = result.reason or "request_not_attempted"
+        elif result.request_sent_count == 0:
+            result.status = "BLOCKED"
+            result.reason = result.reason or "request_not_sent"
+        elif result.api_success_count == 0:
+            result.status = "FAIL"
+            result.reason = result.reason or "api_error"
+        elif result.response_count > 0 and result.invalid_response_count == result.response_count:
+            result.status = "FAIL"
+            result.reason = "all_responses_invalid"
+        elif result.response_count > 0 and result.empty_raw_response_count == result.response_count:
+            result.status = "FAIL"
+            result.reason = "empty_raw_response"
+        elif (
+            result.request_sent_count > 0
+            and result.api_success_count > 0
+            and result.valid_response_count > 0
+            and result.empty_raw_response_count == 0
+            and result.json_parse_error_count == 0
+            and result.invalid_response_count == 0
+            and not result.errors
+        ):
+            result.status = "PASS"
+            result.reason = ""
+        else:
+            result.status = "FAIL"
+            result.reason = result.reason or "validation_failed"
+    result.ok = result.status == "PASS"
 
 
 def build_manifest(
@@ -559,12 +749,22 @@ def build_manifest(
         "input_prefix": result.input_prefix,
         "output_prefix": result.output_prefix,
         "context_pack_count": result.context_pack_count,
+        "status": result.status,
+        "reason": result.reason,
+        "request_attempt_count": result.request_attempt_count,
+        "request_sent_count": result.request_sent_count,
+        "api_success_count": result.api_success_count,
+        "api_error_count": result.api_error_count,
+        "exception_count": result.exception_count,
+        "skipped_by_guard_count": result.skipped_by_guard_count,
         "llm_call_count": result.llm_call_count,
         "response_count": result.response_count,
+        "valid_response_count": result.valid_response_count,
         "ready_response_count": result.ready_response_count,
         "partial_response_count": result.partial_response_count,
         "insufficient_response_count": result.insufficient_response_count,
         "invalid_response_count": result.invalid_response_count,
+        "empty_raw_response_count": result.empty_raw_response_count,
         "unsupported_claim_count": result.unsupported_claim_count,
         "out_of_pack_fact_ref_count": result.out_of_pack_fact_ref_count,
         "out_of_pack_evidence_ref_count": result.out_of_pack_evidence_ref_count,
@@ -576,6 +776,9 @@ def build_manifest(
         "chroma_accessed": result.chroma_accessed,
         "embedding_called": result.embedding_called,
         "sqlite_written": result.sqlite_written,
+        "usage_total_input_tokens": result.usage_total_input_tokens,
+        "usage_total_output_tokens": result.usage_total_output_tokens,
+        "usage_total_tokens": result.usage_total_tokens,
         "error_count": result.error_count,
         "warning_count": result.warning_count,
         "errors": result.errors,
@@ -601,10 +804,12 @@ def run_sandbox(
     temperature: float = 0.0,
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
     mock_llm: bool = False,
-    read_only: bool = False,
+    real_llm: bool = False,
+    read_only: bool = True,
     mock_invalid_query_ids: set[str] | None = None,
 ) -> SandboxResult:
     root = Path(project_dir).resolve()
+    load_project_env(root)
     child_builder.ensure_dirs(root)
     scope = child_builder.parse_scope(sample_chapters, None)
     db_path = root / child_builder.DB_RELATIVE_PATH
@@ -616,6 +821,16 @@ def run_sandbox(
             raise RuntimeError("L3.11 sandbox must run with --read-only")
         if provider != DEFAULT_PROVIDER:
             raise RuntimeError(f"unsupported provider: {provider}")
+        if not mock_llm:
+            if not real_llm:
+                result.reason = "real_llm_flag_required"
+                raise RuntimeError("real LLM mode requires --real-llm")
+            if os.environ.get("NOVELRAG_ALLOW_REAL_LLM") != "1":
+                result.reason = "real_llm_not_allowed"
+                raise RuntimeError("real LLM mode requires NOVELRAG_ALLOW_REAL_LLM=1")
+            if not os.environ.get("NOVELRAG_LLM_API_KEY", "").strip():
+                result.reason = "missing_api_key"
+                raise RuntimeError("missing NOVELRAG_LLM_API_KEY")
 
         pack_payload = load_json(root / input_paths(input_prefix)["json"])
         _pack_manifest = load_json(root / input_paths(input_prefix)["manifest"])
@@ -629,18 +844,27 @@ def run_sandbox(
             result.forbidden_final_table_count = len(child_builder.forbidden_final_tables(conn))
             if result.forbidden_final_table_count:
                 result.errors.append("forbidden final tables exist before L3.11 sandbox")
-            for pack in context_packs:
+            model = os.environ.get("NOVELRAG_LLM_MODEL", "").strip()
+            for request_index, pack in enumerate(context_packs, start=1):
                 prompt = build_prompt(pack, max_output_tokens=max_output_tokens)
                 prompt_hash = sha256_text(prompt)
                 query_id = str(pack.get("query_id", ""))
                 if mock_llm:
                     raw_response = mock_llm_raw_response(pack, force_invalid=query_id in mock_invalid_query_ids)
+                    call_result = LlmCallResult(
+                        request_was_attempted=True,
+                        request_was_sent=True,
+                        api_success=True,
+                        response_field_path_used="mock.raw_response",
+                        raw_response=raw_response,
+                    )
                 else:
-                    raw_response = call_openai_compatible(
+                    call_result = call_openai_compatible(
                         prompt=prompt,
                         temperature=temperature,
                         max_output_tokens=max_output_tokens,
                     )
+                    raw_response = call_result.raw_response
                 result.llm_call_count += 1
                 parsed, parse_failed, extracted_json_text, extraction_warnings = parse_json_response(raw_response)
                 result.json_extraction_warning_count += len(extraction_warnings)
@@ -650,6 +874,10 @@ def run_sandbox(
                     result.json_parse_error_count += 1
                     response = invalid_response_row(
                         pack,
+                        request_id=f"REQ-{request_index:04d}",
+                        provider=provider,
+                        model=model,
+                        call_result=call_result,
                         prompt_hash=prompt_hash,
                         raw_response=raw_response,
                         extracted_json_text=extracted_json_text,
@@ -660,6 +888,10 @@ def run_sandbox(
                     response = normalize_response(
                         pack,
                         parsed,
+                        request_id=f"REQ-{request_index:04d}",
+                        provider=provider,
+                        model=model,
+                        call_result=call_result,
                         raw_response=raw_response,
                         extracted_json_text=extracted_json_text,
                         json_extraction_warnings=extraction_warnings,
@@ -693,7 +925,7 @@ def run_sandbox(
         if result.forbidden_final_table_count:
             result.errors.append("forbidden final tables exist after L3.11 sandbox")
         result.error_count = len(result.errors)
-        result.ok = result.error_count == 0
+        apply_result_status(result)
 
         write_json(
             root / output_paths(output_prefix)["json"],
@@ -728,9 +960,48 @@ def run_sandbox(
     except Exception as exc:  # noqa: BLE001
         if not result.errors or str(exc) not in result.errors:
             result.errors.append(str(exc))
+        if result.reason in {"real_llm_flag_required", "real_llm_not_allowed", "missing_api_key"}:
+            result.status = "BLOCKED"
         result.error_count = len(result.errors)
         result.warning_count = len(result.warnings)
+        if result.status != "BLOCKED":
+            result.status = "FAIL"
         result.ok = False
+        write_json(
+            root / output_paths(output_prefix)["manifest"],
+            {
+                "layer": "L3.11",
+                "input_prefix": input_prefix,
+                "output_prefix": output_prefix,
+                "status": result.status,
+                "reason": result.reason,
+                "request_attempt_count": result.request_attempt_count,
+                "request_sent_count": result.request_sent_count,
+                "api_success_count": result.api_success_count,
+                "api_error_count": result.api_error_count,
+                "exception_count": result.exception_count,
+                "skipped_by_guard_count": result.skipped_by_guard_count,
+                "response_count": result.response_count,
+                "valid_response_count": result.valid_response_count,
+                "invalid_response_count": result.invalid_response_count,
+                "empty_raw_response_count": result.empty_raw_response_count,
+                "json_parse_error_count": result.json_parse_error_count,
+                "json_extraction_warning_count": result.json_extraction_warning_count,
+                "raw_response_wrapped_count": result.raw_response_wrapped_count,
+                "usage_total_input_tokens": result.usage_total_input_tokens,
+                "usage_total_output_tokens": result.usage_total_output_tokens,
+                "usage_total_tokens": result.usage_total_tokens,
+                "error_count": result.error_count,
+                "warning_count": result.warning_count,
+                "errors": result.errors,
+                "warnings": result.warnings,
+                "mock_llm": result.mock_llm,
+                "provider": result.provider,
+                "temperature": result.temperature,
+                "max_output_tokens": result.max_output_tokens,
+                "created_at": created_at,
+            },
+        )
     return result
 
 
@@ -744,7 +1015,8 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--max-output-tokens", type=int, default=DEFAULT_MAX_OUTPUT_TOKENS)
     parser.add_argument("--mock-llm", action="store_true")
-    parser.add_argument("--read-only", action="store_true")
+    parser.add_argument("--real-llm", action="store_true")
+    parser.add_argument("--read-only", action="store_true", default=True)
     args = parser.parse_args()
     result = run_sandbox(
         args.project_dir,
@@ -755,12 +1027,15 @@ def main() -> None:
         temperature=args.temperature,
         max_output_tokens=args.max_output_tokens,
         mock_llm=args.mock_llm,
+        real_llm=args.real_llm,
         read_only=args.read_only,
     )
     if args.mock_llm:
-        print("L3.11 real llm consumer sandbox MOCK PASS" if result.ok else "L3.11 real llm consumer sandbox MOCK FAIL")
+        print("L3.11 real llm consumer sandbox MOCK PASS" if result.ok else f"L3.11 real llm consumer sandbox MOCK {result.status}")
     else:
-        print("L3.11 real llm consumer sandbox PASS" if result.ok else "L3.11 real llm consumer sandbox FAIL")
+        print("L3.11 real llm consumer sandbox PASS" if result.ok else f"L3.11 real llm consumer sandbox {result.status}")
+    if result.reason:
+        print(f"reason={result.reason}")
     if result.ok:
         print(f"response_count={result.response_count}")
     else:
